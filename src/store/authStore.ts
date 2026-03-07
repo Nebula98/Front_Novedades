@@ -1,0 +1,63 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import authService from '../services/authService'
+import type { StudentInfo, LoginPayload, ChangePasswordPayload } from '../types'
+
+export const useAuthStore = defineStore('auth', () => {
+  // ─── Estado ────────────────────────────────────────────────
+  const token = ref<string | null>(localStorage.getItem('auth_token'))
+  const student = ref<StudentInfo | null>(
+    JSON.parse(localStorage.getItem('auth_student') || 'null')
+  )
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+
+  // ─── Computed ───────────────────────────────────────────────
+  const isAuthenticated = computed(() => !!token.value)
+  const studentFirstName = computed(() => student.value?.nombre?.split(' ')[0] ?? '')
+
+  // ─── Acciones ───────────────────────────────────────────────
+  async function login(payload: LoginPayload): Promise<{ requiresPasswordChange: boolean }> {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await authService.login(payload)
+      token.value = response.token
+      student.value = response.student
+      localStorage.setItem('auth_token', response.token)
+      localStorage.setItem('auth_student', JSON.stringify(response.student))
+      return { requiresPasswordChange: response.requiresPasswordChange }
+    } catch (err: unknown) {
+      error.value = (err as { message?: string })?.message || 'Error al iniciar sesión.'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function changePassword(payload: ChangePasswordPayload): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    try {
+      await authService.changePassword(payload)
+    } catch (err: unknown) {
+      error.value = (err as { message?: string })?.message || 'Error al cambiar la contraseña.'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function logout(): void {
+    authService.logout()
+    token.value = null
+    student.value = null
+    error.value = null
+  }
+
+  function clearError(): void {
+    error.value = null
+  }
+
+  return { token, student, isLoading, error, isAuthenticated, studentFirstName, login, changePassword, logout, clearError }
+})
