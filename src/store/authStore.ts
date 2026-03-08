@@ -4,6 +4,17 @@ import authService from '../services/authService'
 import type { StudentInfo, LoginPayload, ChangePasswordPayload } from '../types'
 
 export const useAuthStore = defineStore('auth', () => {
+
+  // ─── Mock de estudiante ─────────────────────────────────────
+  const mockStudent = ref<StudentInfo>({
+    id: '1',
+    nombre: 'Juan Pérez',
+    codigo: '20240',
+    carrera: 'Ingeniería de Sistemas',
+    sumestre: 5,
+    email: 'juan.perez@universidad.edu'
+  })
+
   // ─── Estado ────────────────────────────────────────────────
   const token = ref<string | null>(localStorage.getItem('auth_token'))
   const student = ref<StudentInfo | null>(
@@ -59,5 +70,5 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
-  return { token, student, isLoading, error, isAuthenticated, studentFirstName, login, changePassword, logout, clearError }
+  return { token, student, mockStudent, isLoading, error, isAuthenticated, studentFirstName, login, changePassword, logout, clearError }
 })
