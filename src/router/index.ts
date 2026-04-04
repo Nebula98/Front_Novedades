@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from "vue-router";
-import type { RouteRecordRaw, RouteMeta } from "vue-router";
+import type { RouteRecordRaw } from "vue-router";
 
 // Extender interfaz RouteMeta para incluir requiredRole
 declare module 'vue-router' {

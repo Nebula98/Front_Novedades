@@ -1,5 +1,5 @@
 import http from '../utils/httpClient'
-import type { UsuarioAdmin, UsuariosStats, CreateUsuarioPayload, UpdateUsuarioPayload } from '../types'
+import type { UsuarioAdmin, CreateUsuarioPayload } from '../types'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INTERFACES

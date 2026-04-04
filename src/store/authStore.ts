@@ -11,7 +11,7 @@ export const useAuthStore = defineStore('auth', () => {
     nombre: 'Alejandro',
     codigo: '20401',
     carrera: 'Ingeniería de Sistemas',
-    sumestre: 8,
+    semestre: 8,
     email: 'juan.perez@universidad.edu'
   })
 
