@@ -2,15 +2,15 @@
     <form class="flex flex-col gap-5" @submit.prevent="handleSubmit" novalidate>
         <!-- Codigo estudiantil -->
          <BaseInput
-            v-model="form.codigo_estudiantil"
+            v-model="form.codigoEstudiantil"
             label="Código Estudiantil"
             type="text"
             placeholder="Ej: 202310001"
-            :error-message="errors.codigo_estudiantil"
-            hint="Utiliza tu código entre 6 y 10 dígitos."
+            :error-message="errors.codigoEstudiantil"
+            hint="Utiliza tu código de 5 dígitos asignado por registro."
             inputmode="numeric"
             autocomplete="username"
-            @blur="validateField('codigo_estudiantil')"
+            @blur="validateField('codigoEstudiantil')"
          >
             <template>
                 <!-- Icono de persona -->
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue';
+import { reactive } from 'vue';
 import BaseInput from '../ui/BaseInput.vue';
 import BaseButton from '../ui/BaseButton.vue';
 import { validateStudentCode, validatePassword } from '../../utils/validators';
@@ -73,44 +73,35 @@ const emit = defineEmits<{
 
 // Estado del formulario
 const form = reactive<LoginPayload>({
-    codigo_estudiantil: '',
+    codigoEstudiantil: '',
     password: ''
 });
 
 const errors = reactive ({
-    codigo_estudiantil: '',
+    codigoEstudiantil: '',
     password: ''
 });
 
 // Validacion por campo
 function validateField(field: keyof typeof errors) {
-    if (field === 'codigo_estudiantil') {
-        errors.codigo_estudiantil = validateStudentCode(form.codigo_estudiantil) ?? '';
+    if (field === 'codigoEstudiantil') {
+        errors.codigoEstudiantil = validateStudentCode(form.codigoEstudiantil) ?? '';
     }
     if (field === 'password') {
         errors.password = validatePassword(form.password) ?? '';
     }
 }
 
-watch(() => form.codigo_estudiantil, (value) => {
-    if (value === '') {
-        errors.codigo_estudiantil = ''
-        return
-    }
-
-    errors.codigo_estudiantil = validateStudentCode(value) ?? ''
-})
-
 function validateAll(): boolean {
-    validateField('codigo_estudiantil');
+    validateField('codigoEstudiantil');
     validateField('password');
-    return !errors.codigo_estudiantil && !errors.password;
+    return !errors.codigoEstudiantil && !errors.password;
 }
 
 // Submit
 function handleSubmit() {
-    if (!validateAll()) return
-
-    emit('submit', { ...form })
+    if (!validateAll()) return; {
+        emit('submit', { ...form });
+    }
 }
 </script>

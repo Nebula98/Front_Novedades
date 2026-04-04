@@ -8,10 +8,10 @@ export const useAuthStore = defineStore('auth', () => {
   // ─── Mock de estudiante ─────────────────────────────────────
   const mockStudent = ref<StudentInfo>({
     id: '1',
-    nombre: 'Juan Pérez',
-    codigo: '20240',
+    nombre: 'Alejandro',
+    codigo: '20401',
     carrera: 'Ingeniería de Sistemas',
-    semestre: 5,
+    sumestre: 8,
     email: 'juan.perez@universidad.edu'
   })
 
@@ -35,23 +35,11 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authService.login(payload)
       token.value = response.token
       student.value = response.student
-      
-      // Guardar token y estudiante en localStorage
       localStorage.setItem('auth_token', response.token)
       localStorage.setItem('auth_student', JSON.stringify(response.student))
-      
-      // DEBUG: Log para verificar que se guarda el rol correctamente
-      console.log('🔐 Login exitoso - Rol:', response.student.rol)
-      
-      // Guardar si necesita cambiar contraseña
-      if (response.requiresPasswordChange) {
-        localStorage.setItem('primer_login', 'true')
-      }
-      
       return { requiresPasswordChange: response.requiresPasswordChange }
     } catch (err: unknown) {
       error.value = (err as { message?: string })?.message || 'Error al iniciar sesión.'
-      console.error('❌ Error en login:', error.value)
       throw err
     } finally {
       isLoading.value = false
@@ -63,8 +51,6 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       await authService.changePassword(payload)
-      // Limpiar flag de primer login después de cambiar contraseña
-      localStorage.removeItem('primer_login')
     } catch (err: unknown) {
       error.value = (err as { message?: string })?.message || 'Error al cambiar la contraseña.'
       throw err
@@ -76,7 +62,6 @@ export const useAuthStore = defineStore('auth', () => {
   function logout(): void {
     authService.logout()
     token.value = null
-    localStorage.removeItem('primer_login')
     student.value = null
     error.value = null
   }

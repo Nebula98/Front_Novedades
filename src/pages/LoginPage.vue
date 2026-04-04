@@ -49,22 +49,8 @@ async function handleLogin(payload: LoginPayload) {
             // El backend indica que debe cambiar la contraseña
             await router.push({ name: 'ChangePassword' });
         } else {
-            // Login normal -> redirigir según rol
-            const student = authStore.student;
-            
-            // DEBUG: Verificar qué rol se obtiene
-            console.log('📍 Redirigiendo - Rol del estudiante:', student?.rol);
-            
-            if (student?.rol === 'Administrador') {
-                console.log('👤 Usuario ADMIN detectado');
-                await router.push({ name: 'AdminUsuarios' });
-            } else if (student?.rol === 'Secretaria') {
-                console.log('👤 Usuario SECRETARIA detectado');
-                await router.push({ name: 'SecretariaDashboard' });
-            } else {
-                console.log('👤 Usuario ESTUDIANTE (default)');
-                await router.push({ name: 'Dashboard' });
-            }
+            // Login normal -> ir al dashboard
+            await router.push({ name: 'Dashhboard' });
         }
     } catch {
         // El error ya fue capturado y guardado en authStore.error

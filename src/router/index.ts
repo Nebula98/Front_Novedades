@@ -12,6 +12,10 @@ declare module 'vue-router' {
 
 const routes: RouteRecordRaw[] = [
     { path: '/', redirect: '/login' },
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // RUTAS PÚBLICAS / AUTENTICACIÓN
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     {
         path: '/login',
         name: 'Login',
@@ -24,6 +28,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../pages/ChangePasswordPage.vue'),
         meta: { requiresAuth: true }
     },
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // RUTAS ESTUDIANTE (requieren rol Estudiante)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -37,14 +42,29 @@ const routes: RouteRecordRaw[] = [
         path: '/dashboard/solicitud',
         name: 'NuevaSolicitud',
         component: () => import('../pages/NuevasolicitudPage.vue'),
-        meta: { requiresAuth: true, requiredRole: 'Estudiante' },
+        meta: { requiresAuth: true, requiredRole: 'Estudiante' }
+    },
+    // Alias: ruta alternativa para nuevas solicitudes (nuevo diseño)
+    {
+        path: '/nueva-solicitud',
+        name: 'NewApplication',
+        component: () => import('../pages/NewApplicationPage.vue'),
+        meta: { requiresAuth: true, requiredRole: 'Estudiante' }
     },
     {
         path: '/dashboard/historial',
         name: 'MiHistorial',
         component: () => import('../pages/MiHistorialPage.vue'),
-        meta: { requiresAuth: true, requiredRole: 'Estudiante' },
+        meta: { requiresAuth: true, requiredRole: 'Estudiante' }
     },
+    // Alias: ruta alternativa para historial (nuevo diseño)
+    {
+        path: '/historial',
+        name: 'History',
+        component: () => import('../pages/History.vue'),
+        meta: { requiresAuth: true, requiredRole: 'Estudiante' }
+    },
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // RUTAS SECRETARIA (requieren rol Secretaria)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -72,6 +92,7 @@ const routes: RouteRecordRaw[] = [
       component: () => import('../pages/SecretariaDashboardPage.vue'),
       meta: { requiresAuth: true, requiredRole: 'Secretaria' }
     },
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // RUTAS ADMINISTRADOR (requieren rol Administrador)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -94,6 +115,7 @@ const routes: RouteRecordRaw[] = [
       meta: { requiresAuth: true, requiredRole: 'Administrador' }
     },
 
+    // Fallback - Cualquier ruta desconocida
     { path: '/:pathMatch(.*)*', redirect: '/login' },
 ]
 

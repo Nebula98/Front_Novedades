@@ -1,93 +1,15 @@
 import http from '../utils/httpClient'
 import type { LoginPayload, LoginResponse, ChangePasswordPayload, ChangePasswordResponse } from '../types'
 
-interface BackendLoginResponse {
-  ok: boolean
-  mensaje: string
-  datos: {
-    id_usuario: number
-    nombre_completo: string
-    token: string
-    primer_login: boolean
-    rol: string
-    codigo_estudiantil: string | null
-    carrera?: string
-    programa?: string
-    semestre?: number
-    email?: string
-    promedio?: string | number
-    avatarUrl?: string
-  }
-  codigo_estado: number
-}
-
-// Normalizar rol para asegurar consistencia
-function normalizeRole(rol: string): string {
-  if (!rol) return 'Estudiante'
-  const rolMap: Record<string, string> = {
-    'ADMIN': 'Administrador',
-    'ADMINISTRADOR': 'Administrador',
-    'SECRETARIA': 'Secretaria',
-    'SECRETARIA': 'Secretaria',
-    'ESTUDIANTE': 'Estudiante',
-    'DOCENTE': 'Docente',
-    // Minúsculas también
-    'admin': 'Administrador',
-    'administrador': 'Administrador',
-    'secretaria': 'Secretaria',
-    'estudiante': 'Estudiante',
-    'docente': 'Docente',
-  }
-  return rolMap[rol.trim()] || 'Estudiante'
-}
-
 const authService = {
   async login(payload: LoginPayload): Promise<LoginResponse> {
-    const { data } = await http.post<BackendLoginResponse>('/auth/login', payload)
-    
-    // Normalizar el rol para asegurar consistencia
-    const normalizedRol = normalizeRole(data.datos.rol)
-    
-    // Mapeo de respuesta backend a tipo esperado por frontend
-    return {
-      token: data.datos.token,
-      student: {
-        id: String(data.datos.id_usuario),
-        nombre: data.datos.nombre_completo,
-        codigo: data.datos.codigo_estudiantil || '',
-        rol: normalizedRol,
-        carrera: data.datos.carrera,
-        programa: data.datos.programa,
-        semestre: data.datos.semestre,
-        email: data.datos.email,
-        promedio: data.datos.promedio,
-        avatarUrl: data.datos.avatarUrl,
-      },
-      requiresPasswordChange: data.datos.primer_login,
-    }
+    const { data } = await http.post<LoginResponse>('/auth/login', payload)
+    return data
   },
 
   async changePassword(payload: ChangePasswordPayload): Promise<ChangePasswordResponse> {
-    const { data } = await http.post<BackendLoginResponse>('/auth/change-password', payload)
-    
-    // Normalizar el rol también aquí
-    const normalizedRol = normalizeRole(data.datos.rol)
-    
-    return {
-      token: data.datos.token,
-      student: {
-        id: String(data.datos.id_usuario),
-        nombre: data.datos.nombre_completo,
-        codigo: data.datos.codigo_estudiantil || '',
-        rol: normalizedRol,
-        carrera: data.datos.carrera,
-        programa: data.datos.programa,
-        semestre: data.datos.semestre,
-        email: data.datos.email,
-        promedio: data.datos.promedio,
-        avatarUrl: data.datos.avatarUrl,
-      },
-    }
+    const { data } = await http.post<ChangePasswordResponse>('/auth/change-password', payload)
+    return data
   },
 
   logout(): void {
