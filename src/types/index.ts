@@ -150,7 +150,7 @@ export interface ApiError {
 export type EstadoUsuario = 'Activo' | 'Inactivo' | 'Suspension'
 
 export interface SolicitudAdmin {
-    id: number
+    id: number | string
     id_estudiante: number | string
     codigo_solicitud: string
     tipo: TipoTramite
@@ -171,6 +171,7 @@ export interface SolicitudAdmin {
         semestre: number
         promedio: string
         email: string
+        avatarUrl?: string
     }
 }
 

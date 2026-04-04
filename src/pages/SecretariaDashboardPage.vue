@@ -390,7 +390,7 @@ const filterPrograma = ref('')
 const filterEstado   = ref<EstadoSolicitud | ''>('')
 const loadingStats   = ref(false)
 const loadingTabla   = ref(false)
-const procesando     = ref<string | null>(null)
+const procesando     = ref<string | number | null>(null)
 
 // ─── Carga inicial ────────────────────────────────────────────────────────────
 onMounted(async () => {
@@ -440,10 +440,10 @@ function onFilterChange() {
 }
 
 // ─── Acciones fila ────────────────────────────────────────────────────────────
-async function aprobar(id: string) {
+async function aprobar(id: number | string) {
   procesando.value = id
   try {
-    await adminService.aprobar(id)
+    await adminService.aprobar(String(id))
     const idx = solicitudes.value.findIndex(s => s.id === id)
     if (idx !== -1) {
       const current = solicitudes.value[idx]
@@ -456,10 +456,10 @@ async function aprobar(id: string) {
   }
 }
 
-async function rechazar(id: string) {
+async function rechazar(id: number | string) {
   procesando.value = id
   try {
-    await adminService.rechazar(id)
+    await adminService.rechazar(String(id))
     const idx = solicitudes.value.findIndex(s => s.id === id)
     if (idx !== -1) {
       const current = solicitudes.value[idx]
