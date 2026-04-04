@@ -1,5 +1,14 @@
+/**
+ * 🔐 SERVICIOS DE AUTENTICACIÓN
+ * 
+ * El token se gestiona automáticamente:
+ * ✅ Se guarda en localStorage después del login
+ * ✅ Se envía automáticamente en cada request (interceptor)
+ * ✅ Si expira (401), automáticamente redirige a /login
+ */
+
 import http from '../utils/httpClient'
-import type { LoginPayload, LoginResponse, ChangePasswordPayload, ChangePasswordResponse } from '../types'
+import type { LoginPayload, LoginResponse, ChangePasswordPayload, RolUsuario } from '../types'
 
 interface BackendLoginResponse {
   ok: boolean
@@ -10,7 +19,7 @@ interface BackendLoginResponse {
     token: string
     primer_login: boolean
     rol: string
-    codigo_estudiantil: string | null
+    codigo_estudiantil?: string
     carrera?: string
     programa?: string
     semestre?: number
@@ -21,34 +30,40 @@ interface BackendLoginResponse {
   codigo_estado: number
 }
 
-// Normalizar rol para asegurar consistencia
-function normalizeRole(rol: string): string {
-  if (!rol) return 'Estudiante'
-  const rolMap: Record<string, string> = {
+/**
+ * Normalizar rol para asegurar consistencia en toda la app
+ */
+function normalizeRole(rol: string): RolUsuario {
+  const rolMap: Record<string, RolUsuario> = {
     'ADMIN': 'Administrador',
     'ADMINISTRADOR': 'Administrador',
     'SECRETARIA': 'Secretaria',
-    'SECRETARIA': 'Secretaria',
     'ESTUDIANTE': 'Estudiante',
-    'DOCENTE': 'Docente',
-    // Minúsculas también
     'admin': 'Administrador',
     'administrador': 'Administrador',
     'secretaria': 'Secretaria',
     'estudiante': 'Estudiante',
-    'docente': 'Docente',
   }
-  return rolMap[rol.trim()] || 'Estudiante'
+  return rolMap[rol?.trim() || ''] || 'Estudiante'
 }
 
-const authService = {
+const authApi = {
+  /**
+   * 🔐 LOGIN - Inicia sesión y guarda token automáticamente
+   * 
+   * @param payload - { codigo_estudiantil, password }
+   * @returns Token y datos del usuario
+   * 
+   * ⚡ Uso:
+   * const result = await authApi.login({ codigo_estudiantil: '20240', password: 'abc123' })
+   * localStorage.getItem('auth_token')  // ✅ Ya está guardado
+   * localStorage.getItem('auth_student') // ✅ Datos del usuario guardados
+   */
   async login(payload: LoginPayload): Promise<LoginResponse> {
     const { data } = await http.post<BackendLoginResponse>('/auth/login', payload)
-    
-    // Normalizar el rol para asegurar consistencia
+
     const normalizedRol = normalizeRole(data.datos.rol)
-    
-    // Mapeo de respuesta backend a tipo esperado por frontend
+
     return {
       token: data.datos.token,
       student: {
@@ -67,12 +82,14 @@ const authService = {
     }
   },
 
-  async changePassword(payload: ChangePasswordPayload): Promise<ChangePasswordResponse> {
+  /**
+   * 🔑 CAMBIAR CONTRASEÑA - Solo para primer login
+   */
+  async changePassword(payload: ChangePasswordPayload): Promise<LoginResponse> {
     const { data } = await http.post<BackendLoginResponse>('/auth/change-password', payload)
-    
-    // Normalizar el rol también aquí
+
     const normalizedRol = normalizeRole(data.datos.rol)
-    
+
     return {
       token: data.datos.token,
       student: {
@@ -87,17 +104,52 @@ const authService = {
         promedio: data.datos.promedio,
         avatarUrl: data.datos.avatarUrl,
       },
+      requiresPasswordChange: false,
     }
   },
 
+  /**
+   * 🚪 LOGOUT - Limpia todo
+   */
   logout(): void {
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_student')
+    localStorage.removeItem('primer_login')
   },
 
+  /**
+   * ✅ Verifcar si está autenticado
+   */
   isAuthenticated(): boolean {
     return !!localStorage.getItem('auth_token')
   },
+
+  /**
+   * 👤 Obtener rol del usuario actual
+   */
+  getCurrentRole(): string | null {
+    const studentData = localStorage.getItem('auth_student')
+    if (!studentData) return null
+    try {
+      const student = JSON.parse(studentData)
+      return student.rol || null
+    } catch {
+      return null
+    }
+  },
+
+  /**
+   * 👤 Obtener datos del usuario actual
+   */
+  getCurrentUser() {
+    const studentData = localStorage.getItem('auth_student')
+    if (!studentData) return null
+    try {
+      return JSON.parse(studentData)
+    } catch {
+      return null
+    }
+  },
 }
 
-export default authService
+export default authApi

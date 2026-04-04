@@ -83,8 +83,15 @@ onMounted(() => authStore.clearError());
  async function handleChangePassword(payload: ChangePasswordPayload) {
     try {
         await authStore.changePassword(payload);
-        // Cambio exitoso -> ir al dashboard
-        await router.push({ name: 'Dashboard' });
+        // Cambio exitoso -> redirigir según rol
+        const student = authStore.student;
+        if (student?.rol === 'Administrador') {
+            await router.push({ name: 'AdminUsuarios' });
+        } else if (student?.rol === 'Secretaria') {
+            await router.push({ name: 'SecretariaDashboard' });
+        } else {
+            await router.push({ name: 'Dashboard' });
+        }
     } catch {
         // El error se muestra en AlertMessage via authStore.error
     }

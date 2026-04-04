@@ -1,6 +1,14 @@
 import { createRouter, createWebHashHistory } from "vue-router";
-import type { RouteRecordRaw } from "vue-router";
-import { useAuthStore } from "../store/authStore";
+import type { RouteRecordRaw, RouteMeta } from "vue-router";
+
+// Extender interfaz RouteMeta para incluir requiredRole
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    requiresGuest?: boolean
+    requiredRole?: 'Administrador' | 'Secretaria' | 'Estudiante'
+  }
+}
 
 const routes: RouteRecordRaw[] = [
     { path: '/', redirect: '/login' },
@@ -16,82 +24,120 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../pages/ChangePasswordPage.vue'),
         meta: { requiresAuth: true }
     },
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // RUTAS ESTUDIANTE (requieren rol Estudiante)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     {
         path: '/dashboard',
         name: 'Dashboard',
         component: () => import('../pages/DashboardPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, requiredRole: 'Estudiante' }
     },
     {
         path: '/dashboard/solicitud',
         name: 'NuevaSolicitud',
         component: () => import('../pages/NuevasolicitudPage.vue'),
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, requiredRole: 'Estudiante' },
     },
     {
         path: '/dashboard/historial',
         name: 'MiHistorial',
         component: () => import('../pages/MiHistorialPage.vue'),
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, requiredRole: 'Estudiante' },
     },
-    {
-        path: '/historial',
-        name: 'Historial',
-        component: () => import('../pages/Historial.vue'),
-        meta: { requiresAuth: true },
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // RUTAS SECRETARIA (requieren rol Secretaria)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    { 
+      path: '/secretaria',
+      name: 'SecretariaDashboard',
+      component: () => import('../pages/SecretariaDashboardPage.vue'),
+      meta: { requiresAuth: true, requiredRole: 'Secretaria' }
     },
-    // ─── RUTAS ADMIN ───────────────────────────────────────────────────────
-    {
-        path: '/admin/usuarios',
-        name: 'AdminUsuarios',
-        component: () => import('../pages/AdminUsuarios.vue'),
-        meta: { requiresAuth: true, requiredRole: 'Administrador' }
+    { 
+      path: '/secretaria/solicitudes',
+      name: 'SecretariaSolicitudes',
+      component: () => import('../pages/SecretariaDashboardPage.vue'),
+      meta: { requiresAuth: true, requiredRole: 'Secretaria' }
     },
-    {
-        path: '/admin/dashboard',
-        name: 'AdminDashboard',
-        component: () => import('../pages/AdminDashboardPage.vue'),
-        meta: { requiresAuth: true, requiredRole: 'Administrador' }
+    { 
+      path: '/secretaria/solicitudes/:id',
+      name: 'SecretariaDetalle',
+      component: () => import('../pages/AdminDetalleSolicitud.vue'),
+      meta: { requiresAuth: true, requiredRole: 'Secretaria' }
     },
-    { path: '/:pathMatch(.*)*', redirect: '/login' }, // Cualquier ruta desconocida -> Login
-];
+    { 
+      path: '/secretaria/config',
+      name: 'SecretariaConfig',
+      component: () => import('../pages/SecretariaDashboardPage.vue'),
+      meta: { requiresAuth: true, requiredRole: 'Secretaria' }
+    },
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // RUTAS ADMINISTRADOR (requieren rol Administrador)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    { 
+      path: '/admin/dashboard',
+      name: 'AdminDashboard',
+      component: () => import('../pages/AdminDashboardPage.vue'),
+      meta: { requiresAuth: true, requiredRole: 'Administrador' }
+    },
+    { 
+      path: '/admin/usuarios',
+      name: 'AdminUsuarios',
+      component: () => import('../pages/AdminUsuarios.vue'),
+      meta: { requiresAuth: true, requiredRole: 'Administrador' }
+    },
+    { 
+      path: '/admin/auditoria',
+      name: 'AdminAuditoria',
+      component: () => import('../pages/AdminDetalleSolicitud.vue'),
+      meta: { requiresAuth: true, requiredRole: 'Administrador' }
+    },
 
-export const router = createRouter({
-    history: createWebHashHistory(),
-    routes
-});
+    { path: '/:pathMatch(.*)*', redirect: '/login' },
+]
 
-/**
- * Guard global: Protege rutas privadas, valida roles y evita que usuarios
- * autenticados vuelvan al login
- */
-router.beforeEach((to, from) => {
-    const authStore = useAuthStore();
-    const isAuthenticated = !!authStore.token;
-    const userRole = authStore.student?.rol;
-    const primerLogin = authStore.student?.requiresPasswordChange;
+export const router = createRouter({ history: createWebHashHistory(), routes })
 
-    // Se requiere que el usuario no esté autenticado (ej: login)
-    if (to.meta.requiresGuest && isAuthenticated) {
-        return { name: 'Dashboard' };
-    }
+router.beforeEach((to) => {
+  const isAuthenticated = !!localStorage.getItem('auth_token')
+  const studentData = localStorage.getItem('auth_student')
+  const student = studentData ? JSON.parse(studentData) : null
+  const userRole = student?.rol
+  const mustChange = localStorage.getItem('primer_login') === 'true'
 
-    // Se requiere autenticación
-    if (to.meta.requiresAuth && !isAuthenticated) {
-        return { name: 'Login' };
-    }
+  // 🔴 Si no está autenticado y requiere auth → /login
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    console.warn('❌ Acceso denegado: No autenticado')
+    return { name: 'Login' }
+  }
 
-    // Verificar rol requerido
-    if (to.meta.requiredRole) {
-        if (!isAuthenticated) {
-            return { name: 'Login' };
-        }
+  // 🔴 Si está autenticado pero debe cambiar contraseña (excepto en ChangePassword) → /cambiar-contrasena
+  if (isAuthenticated && mustChange && to.name !== 'ChangePassword') {
+    console.warn('⚠️ Redirigiendo a cambiar contraseña')
+    return { name: 'ChangePassword' }
+  }
 
-        if (userRole !== to.meta.requiredRole) {
-            console.warn(
-                `[Router] Usuario con rol '${userRole}' intentó acceder a ruta que requiere '${to.meta.requiredRole}'`
-            );
-            return { name: 'Dashboard' };
-        }
-    }
-});
+  // 🔴 Si está autenticado y es guest (login) → redirigir según rol
+  if (to.meta.requiresGuest && isAuthenticated) {
+    console.log('🔀 Redireccionando desde login según rol:', userRole)
+    if (userRole === 'Administrador') return { name: 'AdminUsuarios' }
+    if (userRole === 'Secretaria') return { name: 'SecretariaDashboard' }
+    return { name: 'Dashboard' }
+  }
+
+  // 🔴 Si requiere rol específico y no lo tiene → redirigir a dashboard del rol
+  if (to.meta.requiresAuth && to.meta.requiredRole && userRole !== to.meta.requiredRole) {
+    console.warn(`❌ Acceso denegado: Rol requerido '${to.meta.requiredRole}', pero tienes '${userRole}'`)
+    
+    // Redirigir según el rol que sí tiene
+    if (userRole === 'Administrador') return { name: 'AdminUsuarios' }
+    if (userRole === 'Secretaria') return { name: 'SecretariaDashboard' }
+    return { name: 'Dashboard' }
+  }
+
+  // 🟢 Permitir acceso
+  return true
+})
+
+export default router

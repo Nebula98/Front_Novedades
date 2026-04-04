@@ -1,5 +1,5 @@
 import http from '../utils/httpClient'
-import type { UsuarioAdmin, UsuariosStats } from '../types'
+import type { UsuarioAdmin, UsuariosStats, CreateUsuarioPayload, UpdateUsuarioPayload } from '../types'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INTERFACES
@@ -23,70 +23,65 @@ export interface GetUsuariosResponse {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const usuariosService = {
-  /**
-   * Obtiene estadísticas generales de usuarios
-   */
-  async getStats(): Promise<UsuariosStats> {
-    const { data } = await http.get('/admin/usuarios/stats')
+  // 🔹 LISTAR USUARIOS con filtros y paginación
+  async getUsuarios(params?: {
+    pagina?: number
+    limite?: number
+    rol?: 'ADMIN' | 'SECRETARIA' | 'ESTUDIANTE'
+    activo?: boolean
+  }) {
+    const { data } = await http.get('/usuarios', { params })
     return data
   },
 
-  /**
-   * Obtiene lista paginada de usuarios
-   */
-  async getUsuarios(params: GetUsuariosParams): Promise<GetUsuariosResponse> {
-    const q = new URLSearchParams()
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== '') q.set(k, String(v))
+  // 🔹 BUSCAR USUARIOS por nombre, email o código
+  async buscar(q: string) {
+    const { data } = await http.get('/usuarios/buscar', {
+      params: { q }
     })
-    const { data } = await http.get(`/admin/usuarios?${q}`)
     return data
   },
 
-  /**
-   * Obtiene un usuario por ID
-   */
-  async getUsuarioById(id: string): Promise<UsuarioAdmin> {
-    const { data } = await http.get(`/admin/usuarios/${id}`)
+  // 🔹 OBTENER USUARIO POR ID
+  async getById(id: number) {
+    const { data } = await http.get(`/usuarios/${id}`)
     return data
   },
 
-  /**
-   * Crea un nuevo usuario
-   */
-  async crear(payload: {
-    nombre: string
-    email: string
-    rol: import('../types').RolUsuario
-    programa: string
-    idInstitucional?: string
-  }): Promise<UsuarioAdmin> {
-    const { data } = await http.post('/admin/usuarios', payload)
+  // 🔹 ACTUALIZAR USUARIO (nombre y email)
+  async actualizar(id: number, payload: {
+    nombre_completo?: string
+    email_institucional?: string
+  }) {
+    const { data } = await http.put(`/usuarios/${id}`, payload)
     return data
   },
 
-  /**
-   * Edita un usuario existente
-   */
-  async editar(id: string, payload: Partial<UsuarioAdmin>): Promise<UsuarioAdmin> {
-    const { data } = await http.put(`/admin/usuarios/${id}`, payload)
+  // 🔹 CREAR USUARIO NUEVO (solo ADMIN)
+  async crear(payload: CreateUsuarioPayload) {
+    const { data } = await http.post('/usuarios', payload)
     return data
   },
 
-  /**
-   * Elimina un usuario
-   */
-  async eliminar(id: string): Promise<void> {
-    await http.delete(`/admin/usuarios/${id}`)
+  // 🔹 DESACTIVAR USUARIO
+  async desactivar(id: number) {
+    const { data } = await http.put(`/usuarios/${id}/desactivar`)
+    return data
   },
 
-  /**
-   * Exporta los usuarios a archivo (CSV/Excel)
-   */
-  async exportar(): Promise<Blob> {
-    const res = await http.get('/admin/usuarios/export', { responseType: 'blob' })
-    return res.data as unknown as Blob
+  // 🔹 REACTIVAR USUARIO (solo ADMIN)
+  async reactivar(id: number) {
+    const { data } = await http.put(`/usuarios/${id}/reactivar`)
+    return data
   },
+
+  // 🔹 CAMBIAR ESTADO DE MATRÍCULA (estudiantes)
+  async cambiarMatricula(id: number, matricula_activa: boolean) {
+    const { data } = await http.put(`/usuarios/${id}/estado-matricula`, {
+      matricula_activa
+    })
+    return data
+  }
 }
 
 export default usuariosService

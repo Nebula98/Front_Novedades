@@ -43,10 +43,10 @@
           <p class="text-[12.5px] font-semibold text-slate-500 mb-2">Total Usuarios</p>
           <div v-if="loadingStats" class="h-9 w-20 bg-slate-100 rounded-xl animate-pulse mb-1.5" />
           <p v-else class="text-[36px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">
-            {{ stats?.totalUsuarios?.toLocaleString('es-CO') ?? '2,840' }}
+            {{ stats?.totalUsuarios?.toLocaleString('es-CO') ?? '0' }}
           </p>
           <p class="text-[12px] text-slate-400">
-            +{{ stats?.crecimientoSemestre ?? 12 }}% desde el último semestre
+            +{{ stats?.crecimientoSemestre ?? 0 }}% desde el último semestre
           </p>
         </div>
         <div class="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
@@ -65,10 +65,10 @@
           <p class="text-[12.5px] font-semibold text-slate-500 mb-2">Usuarios Activos</p>
           <div v-if="loadingStats" class="h-9 w-20 bg-slate-100 rounded-xl animate-pulse mb-1.5" />
           <p v-else class="text-[36px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">
-            {{ stats?.usuariosActivos?.toLocaleString('es-CO') ?? '2,150' }}
+            {{ stats?.usuariosActivos?.toLocaleString('es-CO') ?? '0' }}
           </p>
           <p class="text-[12px] text-slate-400">
-            {{ stats?.porcentajeActivos ?? 85 }}% de la población total
+            {{ stats?.porcentajeActivos ?? 0 }}% de la población total
           </p>
         </div>
         <div class="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
@@ -551,18 +551,12 @@ const toast = ref<{ tipo: 'exito' | 'error'; mensaje: string } | null>(null)
 
 // ─── Carga inicial ────────────────────────────────────────────────────────────
 onMounted(async () => {
-  loadingStats.value = true
   loadingTabla.value = true
   try {
-    const [statsData, tablaData] = await Promise.all([
-      usuariosService.getStats().catch(() => null),
-      usuariosService.getUsuarios({ page: 1, limit: PER_PAGE }),
-    ])
-    stats.value    = statsData
-    usuarios.value = tablaData.data
-    total.value    = tablaData.total
+    const res = await usuariosService.getUsuarios({ pagina: 1, limite: PER_PAGE })
+    usuarios.value = res.data
+    total.value    = res.total
   } catch { /* sin backend — valores fallback visibles en template */ } finally {
-    loadingStats.value = false
     loadingTabla.value = false
   }
 })
@@ -573,11 +567,10 @@ async function fetchTabla() {
   loadingTabla.value = true
   try {
     const res = await usuariosService.getUsuarios({
-      page:     page.value,
-      limit:    PER_PAGE,
-      search:   search.value    || undefined,
-      rol:      filterRol.value || undefined,
-      programa: filterPrograma.value || undefined,
+      pagina: page.value,
+      limite: PER_PAGE,
+      rol: filterRol.value && filterRol.value !== 'Administrador' ? (filterRol.value === 'Estudiante' ? 'ESTUDIANTE' : filterRol.value === 'Secretaria' ? 'SECRETARIA' : 'ADMIN') : undefined,
+      activo: filterPrograma.value ? undefined : undefined,
     })
     usuarios.value = res.data
     total.value    = res.total
@@ -623,23 +616,27 @@ async function guardarUsuario() {
   guardando.value = true
   try {
     if (usuarioEditando.value) {
-      const actualizado = await usuariosService.editar(usuarioEditando.value.id, {
-        nombre: form.nombre, email: form.email,
-        rol: form.rol as RolUsuario, programa: form.programa,
-        idInstitucional: form.idInstitucional,
+      const actualizado = await usuariosService.actualizar(Number(usuarioEditando.value.id), {
+        nombre_completo: form.nombre,
+        email_institucional: form.email,
       })
       const idx = usuarios.value.findIndex(u => u.id === usuarioEditando.value!.id)
-      if (idx !== -1) usuarios.value[idx] = actualizado
+      if (idx !== -1 && actualizado) {
+        usuarios.value[idx] = actualizado as UsuarioAdmin
+      }
       mostrarToast('Usuario actualizado correctamente.', 'exito')
     } else {
-      const nuevo = await usuariosService.crear({
-        nombre: form.nombre, email: form.email,
-        rol: form.rol as RolUsuario, programa: form.programa,
-        idInstitucional: form.idInstitucional,
+      const nuevoUsuario = await usuariosService.crear({
+        nombre_completo: form.nombre,
+        email_institucional: form.email,
+        rol: form.rol as any,
+        programa: form.programa,
+        codigo_institucional: form.idInstitucional,
       })
-      usuarios.value.unshift(nuevo)
-      total.value++
-      mostrarToast('Usuario creado correctamente.', 'exito')
+      if (nuevoUsuario) {
+        usuarios.value.unshift(nuevoUsuario as UsuarioAdmin)
+        mostrarToast('Usuario creado correctamente.', 'exito')
+      }
     }
     cerrarModal()
   } catch (err: unknown) {
@@ -650,19 +647,24 @@ async function guardarUsuario() {
 }
 
 async function confirmarEliminar(u: UsuarioAdmin) {
-  if (!confirm(`¿Eliminar a ${u.nombre}? Esta acción no se puede deshacer.`)) return
+  if (!confirm(`¿Desactivar a ${u.nombre}?`)) return
   try {
-    await usuariosService.eliminar(u.id)
-    usuarios.value = usuarios.value.filter(x => x.id !== u.id)
-    total.value--
-    mostrarToast('Usuario eliminado.', 'exito')
+    await usuariosService.desactivar(Number(u.id))
+    const idx = usuarios.value.findIndex(x => x.id === u.id)
+    if (idx !== -1) {
+      const usuario = usuarios.value[idx]
+      if (usuario) {
+        usuario.estado = 'Inactivo'
+      }
+    }
+    mostrarToast('Usuario desactivado.', 'exito')
   } catch (err: unknown) {
-    mostrarToast((err as { message?: string })?.message ?? 'Error al eliminar.', 'error')
+    mostrarToast((err as { message?: string })?.message ?? 'Error al desactivar.', 'error')
   }
 }
 
 function exportar() {
-  usuariosService.exportar().catch(() => {})
+  mostrarToast('Función de exportación disponible en futuras versiones.', 'error')
 }
 
 function mostrarToast(mensaje: string, tipo: 'exito' | 'error') {
@@ -702,10 +704,10 @@ function rolChip(rol: RolUsuario): string {
 
 function estadoColor(estado: EstadoUsuario): string {
   const map: Record<EstadoUsuario, string> = {
-    'Activo':     'text-slate-700',
-    'Inactivo':   'text-slate-400',
+    'Activo':   'text-slate-700',
+    'Inactivo': 'text-slate-400',
+    'Pendiente':'text-amber-600',
     'Suspendido': 'text-red-600',
-    'Pendiente':  'text-amber-600',
   }
   return map[estado] ?? 'text-slate-500'
 }

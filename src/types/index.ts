@@ -28,13 +28,14 @@ export interface StudentInfo {
   id: string
   nombre: string
   codigo: string
-  rol?: string
+  rol?: RolUsuario
   carrera?: string
   semestre?: number
   email?: string
   requiresPasswordChange?: boolean
   programa?: string
   avatarUrl?: string
+  promedio?: string | number
 }
 
 export interface User {
@@ -55,26 +56,98 @@ export type TipoTramite =
   | 'Cambio de Jornada'
   | 'Curso Dirigido'
   | 'Adición de Curso'
+  | 'Cancelación de Semestre'
+  | 'Examen Supletorio'
+  | 'Cambio de Programa'
 
 export type EstadoSolicitud = 'En proceso' | 'Aprobada' | 'Rechazada' | 'Pendiente' | 'En Revisión'
 
 // Alias para mantener compatibilidad hacia atrás
 export type EstadoSolicitudAdmin = EstadoSolicitud
 
+export interface EstudianteDetalle {
+  nombre: string
+  codigo: string
+  programa: string
+  semestre: string
+  promedio: string
+  correo: string
+  avatarUrl?: string
+}
+
+export interface DocumentoSoporte {
+  nombre: string
+  url: string
+}
+
+export interface EntradaHistorial {
+  titulo: string
+  fecha: string
+  actor: string
+  activo?: boolean
+}
+
 export interface Solicitud {
   id: string
   tipo: TipoTramite
-  fechaEnvio: string
   estado: EstadoSolicitud
-  descripcion?: string
-  facultad?: string
+  fechaEnvio: string
+  fechaDecision?: string
+  razonRechazo?: string
+  programa?: string
   fecha?: string
 }
 
+export interface SolicitudAdmin {
+  id: string
+  estudiante: { nombre: string; codigo: string; avatarUrl?: string }
+  tipo: TipoTramite
+  estado: EstadoSolicitud
+  fechaEnvio: string
+  fechaDecision?: string
+  razonRechazo?: string
+  programa?: string
+}
+
+export interface SolicitudDetalle {
+  id: string
+  tipo: TipoTramite
+  estado: EstadoSolicitudAdmin
+  radicadoFecha: string
+  estudiante: EstudianteDetalle
+  estadoActual: string
+  estadoSolicitado: string
+  justificacion: string
+  documentos: DocumentoSoporte[]
+  notaReglamento?: string
+  historial: EntradaHistorial[]
+  guiaDecision?: string
+}
+
 export interface QuickAction {
+  id: number
   type: TipoTramite
-  emoji: string
-  description: string
+  label: string
+  description?: string
+  emoji?: string
+  icon?: string
+}
+
+export interface DashboardStats {
+  totalPendientes: number
+  nuevasUltimaHora: number
+  aprobadasHoy: number
+  metaDiariaPercent: number
+  solicitudesEnProceso?: number
+  solicitudesAprobadas?: number
+  solicitudesRechazadas?: number
+  ultimaActualizacion?: string
+}
+
+export interface NavItemSecretaria {
+  label: string
+  routeName: string
+  iconKey: 'dashboard' | 'solicitudes' | 'config'
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -110,32 +183,19 @@ export interface UsuariosStats {
   porcentajeActivos?: number
 }
 
-export interface SolicitudAdmin {
-  id: string
-  estudiante: StudentInfo
-  tipo: TipoTramite
-  estado: EstadoSolicitud
-  fechaEnvio: string
-  fechaDecision?: string
-  razonRechazo?: string
+export interface CreateUsuarioPayload {
+  nombre_completo: string
+  email_institucional: string
+  rol: RolUsuario
+  programa: string
+  codigo_institucional?: string
+}
+
+export interface UpdateUsuarioPayload {
+  nombre_completo?: string
+  email_institucional?: string
+  rol?: RolUsuario
   programa?: string
-  fecha?: string
-}
-
-export interface SolicitudDetalle extends SolicitudAdmin {
-  notas: string
-  documentos: string[]
-}
-
-export interface DashboardStats {
-  solicitudesEnProceso: number
-  solicitudesAprobadas: number
-  solicitudesRechazadas: number
-  ultimaActualizacion: string
-  totalPendientes?: number
-  nuevasUltimaHora?: number
-  aprobadasHoy?: number
-  metaDiariaPercent?: number
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -149,6 +209,42 @@ export interface NavItem {
 }
 
 export type NavItemSuperAdmin = NavItem
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GRUPOS & ACADEMICO
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface Grupo {
+  id: string
+  nombre: string
+  codigo: string
+  descripcion?: string
+  estudiantes?: string[]
+}
+
+export interface FiltrosGrupos {
+  search?: string
+  programa?: string
+  semestre?: number
+  periodo?: string
+  curso_id?: number
+  jornada?: string
+}
+
+export interface PerfilAcademico {
+  promedio: number
+  creditosAprobados: number
+  creditosInscritos: number
+  carrera: string
+  semestre: number
+}
+
+export interface AdjuntoDocumento {
+  id: string
+  nombre: string
+  url: string
+  tipo: string
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ERROR HANDLING

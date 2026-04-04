@@ -7,7 +7,7 @@
             type="text"
             placeholder="Ej: 202310001"
             :error-message="errors.codigo_estudiantil"
-            hint="Utiliza tu código de 5 dígitos asignado por registro."
+            hint="Utiliza tu código entre 6 y 10 dígitos."
             inputmode="numeric"
             autocomplete="username"
             @blur="validateField('codigo_estudiantil')"
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
+import { reactive, watch } from 'vue';
 import BaseInput from '../ui/BaseInput.vue';
 import BaseButton from '../ui/BaseButton.vue';
 import { validateStudentCode, validatePassword } from '../../utils/validators';
@@ -92,6 +92,15 @@ function validateField(field: keyof typeof errors) {
     }
 }
 
+watch(() => form.codigo_estudiantil, (value) => {
+    if (value === '') {
+        errors.codigo_estudiantil = ''
+        return
+    }
+
+    errors.codigo_estudiantil = validateStudentCode(value) ?? ''
+})
+
 function validateAll(): boolean {
     validateField('codigo_estudiantil');
     validateField('password');
@@ -100,8 +109,8 @@ function validateAll(): boolean {
 
 // Submit
 function handleSubmit() {
-    if (!validateAll()) return; {
-        emit('submit', { ...form });
-    }
+    if (!validateAll()) return
+
+    emit('submit', { ...form })
 }
 </script>

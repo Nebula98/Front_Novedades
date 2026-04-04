@@ -35,8 +35,13 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authService.login(payload)
       token.value = response.token
       student.value = response.student
+      
+      // Guardar token y estudiante en localStorage
       localStorage.setItem('auth_token', response.token)
       localStorage.setItem('auth_student', JSON.stringify(response.student))
+      
+      // DEBUG: Log para verificar que se guarda el rol correctamente
+      console.log('🔐 Login exitoso - Rol:', response.student.rol)
       
       // Guardar si necesita cambiar contraseña
       if (response.requiresPasswordChange) {
@@ -46,6 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
       return { requiresPasswordChange: response.requiresPasswordChange }
     } catch (err: unknown) {
       error.value = (err as { message?: string })?.message || 'Error al iniciar sesión.'
+      console.error('❌ Error en login:', error.value)
       throw err
     } finally {
       isLoading.value = false

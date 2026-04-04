@@ -1,7 +1,28 @@
+// export function validateStudentCode(code: string): string | null {
+//     if (!code.trim()) return 'El codigo estudiantil es requerido';
+//     if (!/^\d{6,10}$/.test(code.trim())) 
+//         return 'El codigo debe tener entre 6 y 10 digitos numericos.';
+//     return null;
+// }
+
 export function validateStudentCode(code: string): string | null {
-    if (!code.trim()) return 'El codigo estudiantil es requerido';
-    if (!/^\d{5,}$/.test(code.trim())) return 'El codigo debe tener al menos 5 digitos numericos.';
-    return null;
+    const value = code.trim()
+
+    if (!value) return 'El codigo estudiantil es requerido'
+
+    if (!/^[a-zA-Z0-9]+$/.test(value)) {
+        return 'Solo se permiten letras y numeros'
+    }
+
+    if (value.length < 6) {
+        return 'Debe tener al menos 6 caracteres'
+    }
+
+    if (value.length > 10) {
+        return 'Maximo 10 caracteres'
+    }
+
+    return null
 }
 
 export function validatePassword(password: string): string | null {
