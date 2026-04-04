@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import authService from '../services/authService'
+import { authApi } from '../api'
 import type { StudentInfo, LoginPayload, ChangePasswordPayload } from '../types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -32,7 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     error.value = null
     try {
-      const response = await authService.login(payload)
+      const response = await authApi.login(payload)
       token.value = response.token
       student.value = response.student
       localStorage.setItem('auth_token', response.token)
@@ -50,7 +50,11 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     error.value = null
     try {
-      await authService.changePassword(payload)
+      const response = await authApi.changePassword(payload)
+      token.value = response.token
+      student.value = response.student
+      localStorage.setItem('auth_token', response.token)
+      localStorage.setItem('auth_student', JSON.stringify(response.student))
     } catch (err: unknown) {
       error.value = (err as { message?: string })?.message || 'Error al cambiar la contraseña.'
       throw err
@@ -60,10 +64,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout(): void {
-    authService.logout()
     token.value = null
     student.value = null
     error.value = null
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_student')
   }
 
   function clearError(): void {

@@ -60,7 +60,13 @@ const authApi = {
    * localStorage.getItem('auth_student') // ✅ Datos del usuario guardados
    */
   async login(payload: LoginPayload): Promise<LoginResponse> {
-    const { data } = await http.post<BackendLoginResponse>('/auth/login', payload)
+    // Transformar camelCase a snake_case para el backend
+    const sendPayload = {
+      codigo_estudiantil: payload.codigoEstudiantil,
+      password: payload.password
+    }
+
+    const { data } = await http.post<BackendLoginResponse>('/auth/login', sendPayload)
 
     const normalizedRol = normalizeRole(data.datos.rol)
 
