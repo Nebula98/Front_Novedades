@@ -21,6 +21,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../pages/DashboardPage.vue'),
         meta: { requiresGuest: true }
     },
+    {
+        path: '/nueva-solicitud',
+        name: 'Nueva Solicitud',
+        component: () => import('../pages/NewApplicationPage.vue'),
+        meta: { requiresGuest: true }
+    },
+    {
+        path: '/historial',
+        name: 'Historial',
+        component: () => import('../pages/History.vue'),
+        meta: { requiresGuest: true }
+    },
     { path: '/:pathMatch(.*)*', redirect: '/login' }, // Cualquier ruta desconocida -> Login
 ];
 

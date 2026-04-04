@@ -32,10 +32,10 @@ export interface StudentInfo {
 
 // Solicitudes
 export type TipoTramite = 
-    | 'Cambio de Curso'
-    | 'Cambio de Jornada'
-    | 'Cambio Dirigido'
-    | 'Cambio de Curso'
+  | 'Cambio de Curso'
+  | 'Cambio de Jornada'
+  | 'Curso Dirigido'
+  | 'Adición de Curso'
 
 export type EstadoSolicitud = 'En proceso' | 'Aprobada' | 'Rechazada' | 'Pendiente'
 

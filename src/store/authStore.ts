@@ -8,10 +8,10 @@ export const useAuthStore = defineStore('auth', () => {
   // ─── Mock de estudiante ─────────────────────────────────────
   const mockStudent = ref<StudentInfo>({
     id: '1',
-    nombre: 'Juan Pérez',
-    codigo: '20240',
+    nombre: 'Alejandro',
+    codigo: '20401',
     carrera: 'Ingeniería de Sistemas',
-    sumestre: 5,
+    sumestre: 8,
     email: 'juan.perez@universidad.edu'
   })
 
