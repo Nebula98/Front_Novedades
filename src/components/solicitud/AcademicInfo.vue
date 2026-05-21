@@ -26,7 +26,7 @@
           </svg>
           Nombre Completo
         </p>
-        <p class="text-sm font-semibold text-slate-700">{{ authStore.mockStudent?.nombre }}</p>
+        <p class="text-sm font-semibold text-slate-700">{{ student?.nombre || '—' }}</p>
       </div>
 
       <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -38,7 +38,7 @@
           </svg>
           Codigo Estudiantil
         </p>
-        <p class="text-sm font-semibold text-slate-700">{{ authStore.mockStudent?.codigo }}</p>
+        <p class="text-sm font-semibold text-slate-700">{{ student?.codigo || '—' }}</p>
       </div>
 
       <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -50,7 +50,7 @@
           </svg>
           Programa Academico
         </p>
-        <p class="text-sm font-semibold text-slate-700">{{ authStore.mockStudent?.carrera }}</p>
+        <p class="text-sm font-semibold text-slate-700">{{ student?.carrera || student?.programa || '—' }}</p>
       </div>
 
       <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -62,7 +62,7 @@
           </svg>
           Semestre Actual
         </p>
-        <p class="text-sm font-semibold text-slate-700">{{ authStore.mockStudent?.sumestre }}</p>
+        <p class="text-sm font-semibold text-slate-700">{{ student?.semestre ? `${student.semestre}º Semestre` : '—' }}</p>
       </div>
 
     </div>
@@ -71,9 +71,6 @@
 
 <script setup lang="ts">
 import type { StudentInfo } from '../../types'
-import { useAuthStore } from '../../store/authStore';
-
-const authStore = useAuthStore();
 
 defineProps<{ student: StudentInfo | null }>()
 </script>

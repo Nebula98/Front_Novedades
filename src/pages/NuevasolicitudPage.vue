@@ -1,17 +1,80 @@
 <template>
   <DashboardLayout>
-    <nav class="flex items-center gap-1.5 text-xs text-slate-400 mb-5">
+    <!-- Panel de éxito tras creación -->
+    <Transition enter-active-class="transition-all duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100">
+      <div v-if="solicitudCreada" class="max-w-2xl mx-auto py-8">
+        <div class="bg-white border border-emerald-200 rounded-2xl shadow-sm overflow-hidden">
+          <div class="bg-emerald-50 border-b border-emerald-100 px-6 py-5 flex items-center gap-3">
+            <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-emerald-800">Solicitud Registrada</h2>
+              <p class="text-sm text-emerald-600">Código: <span class="font-mono font-bold">{{ solicitudCreada.codigo_solicitud }}</span></p>
+            </div>
+          </div>
+
+          <div class="px-6 py-4 space-y-4">
+            <div class="grid grid-cols-3 gap-3">
+              <div class="bg-slate-50 rounded-xl px-4 py-3">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Estado</p>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 text-xs font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  {{ solicitudCreada.estado }}
+                </span>
+              </div>
+              <div class="bg-slate-50 rounded-xl px-4 py-3">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Tipo</p>
+                <p class="text-sm font-semibold text-slate-700">{{ solicitudCreada.tipo_solicitud }}</p>
+              </div>
+              <div class="bg-slate-50 rounded-xl px-4 py-3">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Fecha</p>
+                <p class="text-sm font-semibold text-slate-700">{{ new Date(solicitudCreada.created_at).toLocaleDateString('es-CO') }}</p>
+              </div>
+            </div>
+
+            <!-- Validaciones -->
+            <div v-if="solicitudCreada.validacion_json?.validaciones?.length" class="border border-slate-200 rounded-xl overflow-hidden">
+              <div class="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                <h3 class="text-[13px] font-bold text-slate-700">Validaciones Académicas</h3>
+              </div>
+              <ul class="divide-y divide-slate-100">
+                <li v-for="v in solicitudCreada.validacion_json.validaciones" :key="v.nombre" class="flex items-center gap-3 px-4 py-3">
+                  <div :class="['w-6 h-6 rounded-full flex items-center justify-center shrink-0', v.resultado ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600']">
+                    <svg v-if="v.resultado" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[13px] font-semibold text-slate-700">{{ v.nombre.replace(/_/g, ' ') }}</p>
+                    <p class="text-xs text-slate-400">{{ v.detalle }}</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <p class="text-sm text-slate-500 leading-relaxed">Su solicitud quedará en revisión por la secretaría académica. Puede consultar el estado en su historial.</p>
+
+            <div class="flex gap-3 pt-2">
+              <button @click="solicitudCreada = null" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-all">Nueva Solicitud</button>
+              <button @click="router.push({ name: 'MiHistorial' })" class="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-bold transition-all shadow-md shadow-indigo-200">Ver Mi Historial</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <nav v-if="!solicitudCreada" class="flex items-center gap-1.5 text-xs text-slate-400 mb-5">
       <span class="text-slate-500">Trámites Académicos</span>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       <span class="text-indigo-600 font-semibold">Nueva Solicitud</span>
     </nav>
 
-    <div class="mb-6">
+    <div v-if="!solicitudCreada" class="mb-6">
       <h1 class="text-2xl font-bold text-slate-800 tracking-tight mb-1.5">Formulario de Solicitud</h1>
       <p class="text-sm text-slate-500 leading-relaxed max-w-xl">Complete los siguientes campos para formalizar su requerimiento ante la secretaría académica. Asegúrese de adjuntar los soportes necesarios.</p>
     </div>
 
-    <div v-if="form.tipo" class="flex items-start gap-3 bg-indigo-50 border border-indigo-200 border-l-[3px] border-l-indigo-500 rounded-xl px-4 py-3.5 mb-5">
+    <div v-if="!solicitudCreada && form.tipo" class="flex items-start gap-3 bg-indigo-50 border border-indigo-200 border-l-[3px] border-l-indigo-500 rounded-xl px-4 py-3.5 mb-5">
       <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
@@ -21,7 +84,7 @@
       </div>
     </div>
 
-    <div class="max-w-2xl space-y-4 pb-24">
+    <div v-if="!solicitudCreada" class="max-w-2xl space-y-4 pb-24">
       <!-- Información Académica -->
       <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div class="flex items-start gap-3 px-6 py-5 border-b border-slate-100">
@@ -147,7 +210,7 @@
     </div>
 
     <!-- Footer sticky -->
-    <div class="fixed bottom-0 left-40 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-8 py-3.5 flex items-center justify-between z-30 shadow-[0_-4px_16px_rgba(15,23,42,0.06)]">
+    <div v-if="!solicitudCreada" class="fixed bottom-0 left-40 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-8 py-3.5 flex items-center justify-between z-30 shadow-[0_-4px_16px_rgba(15,23,42,0.06)]">
       <div class="flex items-center gap-1.5 text-[11.5px] text-slate-400">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         Campos obligatorios marcados con asterisco (*)
@@ -170,7 +233,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../store/authStore'
 import solicitudesService from '../services/solicitudesService'
-import type { TipoTramite } from '../types'
+import type { TipoTramite, SolicitudCreada } from '../types'
 import DashboardLayout from '../components/layout/Dashboardlayout.vue'
 import BaseInput from '../components/ui/BaseInput.vue'
 
@@ -179,11 +242,12 @@ const router = useRouter(); const route = useRoute()
 const { student } = storeToRefs(useAuthStore())
 const fileInput = ref<HTMLInputElement | null>(null)
 const isLoading = ref(false); const isDragging = ref(false)
+const solicitudCreada = ref<SolicitudCreada | null>(null)
 
 const TIPOS: TipoTramite[] = ['Cambio de Curso','Cambio de Jornada','Curso Dirigido','Adición de Curso','Cancelación de Semestre','Examen Supletorio','Cambio de Programa']
 const jornadasDisponibles = ['mañana', 'tarde', 'noche']
 
-const form = ref({ tipo: '' as TipoTramite | '', descripcion: '', cursoActual: '', cursoNuevo: '', jornadaActual: '', jornadaNueva: '', archivos: [] as File[] })
+const form = ref({ tipo: '' as TipoTramite | '', descripcion: '', codigoCursoActual: '', codigoCursoNuevo: '', cursoActual: '', cursoNuevo: '', jornadaActual: '', jornadaNueva: '', archivos: [] as File[] })
 const errors = ref({ tipo: '', descripcion: '' })
 
 onMounted(() => {
@@ -192,7 +256,7 @@ onMounted(() => {
 })
 
 function onTipoChange() {
-  if (form.value.tipo !== 'Cambio de Curso') { form.value.cursoActual = ''; form.value.cursoNuevo = '' }
+  if (form.value.tipo !== 'Cambio de Curso') { form.value.codigoCursoActual = ''; form.value.codigoCursoNuevo = ''; form.value.cursoActual = ''; form.value.cursoNuevo = '' }
   if (form.value.tipo !== 'Cambio de Jornada') { form.value.jornadaActual = ''; form.value.jornadaNueva = '' }
   errors.value.tipo = ''
 }
@@ -221,7 +285,7 @@ function validate() {
 
 async function handleSubmit() {
   if (!validate()) return
-  if (!student.value?.codigo || !student.value?.email) {
+  if (!student.value?.codigo) {
     errors.value.descripcion = 'Error: Datos de estudiante incompletos. Por favor recarga la página.'
     return
   }
@@ -237,8 +301,10 @@ async function handleSubmit() {
     }
 
     if (form.value.tipo === 'Cambio de Curso') {
-      payload.cursoActual = form.value.cursoActual
-      payload.cursoNuevo = form.value.cursoNuevo
+      payload.codigo_curso_actual = form.value.codigoCursoActual
+      payload.codigo_curso_nuevo = form.value.codigoCursoNuevo
+      payload.curso_actual = form.value.cursoActual
+      payload.curso_nuevo = form.value.cursoNuevo
     }
 
     if (form.value.tipo === 'Cambio de Jornada') {
@@ -252,23 +318,27 @@ async function handleSubmit() {
 
     console.log('📤 Enviando solicitud:', { ...payload, archivos: `${payload.archivos?.length ?? 0} archivo(s)` })
     
-    await solicitudesService.crear(payload)
+    const respuesta = await solicitudesService.crear(payload)
+    console.log('✅ Respuesta servidor:', respuesta)
     
-    console.log('✅ Solicitud enviada exitosamente a la secretaría')
-    router.push({ name: 'MiHistorial' })
+    solicitudCreada.value = respuesta
+    console.log('✅ Solicitud enviada exitosamente:', respuesta.codigo_solicitud)
   } catch (err: any) {
     console.error('❌ Error al enviar solicitud:', err)
     
     // Intentar extraer el mensaje de error más específico
     let mensaje = 'Error al enviar la solicitud.'
-    if (err.response?.data?.error) {
-      mensaje = err.response.data.error
-    } else if (err.response?.data?.mensaje) {
+    if (err.response?.data?.mensaje) {
       mensaje = err.response.data.mensaje
+    } else if (err.response?.data?.error) {
+      mensaje = err.response.data.error
+    } else if (err.response?.data?.message) {
+      mensaje = err.response.data.message
     } else if (err.message) {
       mensaje = err.message
     }
     
+    console.error('📋 Mensaje de error:', mensaje)
     errors.value.descripcion = mensaje
   } finally { isLoading.value = false }
 }

@@ -13,7 +13,14 @@
        <template #footer-extra>
       <p class="text-xs text-slate-500 mt-1">
         ¿Problemas para ingresar?
-        <a href="#" class="text-blue-600 hover:underline font-medium">Contactar Soporte</a>
+                <a
+                    href="https://mail.google.com/mail/?view=cm&fs=1&to=yudith.agredo.r@uniautonoma.edu.co,luis.ramos.sanjuan@uniautonoma.edu.co,cristian.aranda.h@uniautonoma.edu.co"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-600 hover:underline font-medium"
+                >
+                    Contactar Soporte
+                </a>
       </p>
     </template>
 
@@ -43,18 +50,29 @@ onMounted(() => authStore.clearError());
 
 async function handleLogin(payload: LoginPayload) {
     try {
+        console.log('📝 LoginPage.handleLogin iniciando con payload:', payload)
         const { requiresPasswordChange } = await authStore.login(payload);
+        console.log('✅ Login exitoso. requiresPasswordChange:', requiresPasswordChange)
 
         if (requiresPasswordChange) {
             // El backend indica que debe cambiar la contraseña
+            console.log('🔄 Redirigiendo a ChangePassword...')
             await router.push({ name: 'ChangePassword' });
         } else {
-            // Login normal -> ir al dashboard
-            await router.push({ name: 'Dashhboard' });
+            // Login normal -> ir al home según rol
+            const rol = authStore.student?.rol
+            if (rol === 'Administrador') {
+                await router.push({ name: 'AdminUsuarios' })
+            } else if (rol === 'Secretaria') {
+                await router.push({ name: 'SecretariaDashboard' })
+            } else {
+                await router.push({ name: 'Dashboard' })
+            }
         }
-    } catch {
+    } catch (err) {
         // El error ya fue capturado y guardado en authStore.error
         // AlerMessage lo muestra automaticamente
+        console.error('❌ LoginPage.handleLogin catch:', err)
     }
 }
 

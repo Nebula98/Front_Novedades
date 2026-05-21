@@ -7,30 +7,6 @@
         <h1 class="text-[22px] font-bold text-slate-800 tracking-tight">Gestión de Solicitudes</h1>
         <p class="text-sm text-slate-400 mt-1">Monitoreo y procesamiento de trámites académicos estudiantiles.</p>
       </div>
-      <div class="flex items-center gap-3">
-        <button
-          @click="exportarReporte"
-          class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-sm font-semibold transition-all"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Exportar Reporte
-        </button>
-        <button
-          class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-200 transition-all hover:-translate-y-px active:translate-y-0"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-            stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 11 12 14 22 4"/>
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-          </svg>
-          Revisión Masiva
-        </button>
-      </div>
     </div>
 
     <!-- ── Stats ── -->
@@ -133,7 +109,7 @@
             @change="onFilterChange"
             class="appearance-none pl-3.5 pr-8 py-2 rounded-xl border border-slate-200 bg-white text-sm text-slate-600 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer"
           >
-            <option value="">Pendientes</option>
+            <option value="">Todos los estados</option>
             <option v-for="e in ESTADOS" :key="e" :value="e">{{ e }}</option>
           </select>
           <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
@@ -195,13 +171,17 @@
               <tr
                 v-for="s in solicitudes"
                 :key="s.id"
-                class="border-b border-slate-50 hover:bg-slate-50/60 transition-colors"
+                @click="router.push({ name: 'SecretariaDetalle', params: { id: s.id } })"
+                class="border-b border-slate-50 hover:bg-slate-50/60 transition-colors cursor-pointer"
               >
 
                 <!-- ID -->
                 <td class="px-6 py-4">
-                  <span class="text-[13px] font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer transition-colors">
-                    {{ s.id }}
+                  <span
+                    @click="router.push({ name: 'SecretariaDetalle', params: { id: s.id } })"
+                    class="text-[13px] font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer transition-colors"
+                  >
+                    {{ s.codigo_solicitud || s.id }}
                   </span>
                 </td>
 
@@ -209,12 +189,12 @@
                 <td class="px-4 py-4">
                   <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden">
-                      <img v-if="s.estudiante.avatarUrl" :src="s.estudiante.avatarUrl" class="w-full h-full object-cover" alt="" />
-                      <span v-else>{{ s.estudiante.nombre.charAt(0) }}</span>
+                      <img v-if="s.estudiante?.avatarUrl" :src="s.estudiante.avatarUrl" class="w-full h-full object-cover" alt="" />
+                      <span v-else>{{ (s.estudiante?.nombre || s.estudiante_nombre || '?').charAt(0) }}</span>
                     </div>
                     <div>
-                      <p class="text-[13px] font-semibold text-slate-800 leading-tight">{{ s.estudiante.nombre }}</p>
-                      <p class="text-[11.5px] text-slate-400 font-mono">{{ s.estudiante.codigo }}</p>
+                      <p class="text-[13px] font-semibold text-slate-800 leading-tight">{{ s.estudiante?.nombre || s.estudiante_nombre || '—' }}</p>
+                      <p class="text-[11.5px] text-slate-400 font-mono">{{ s.estudiante?.codigo || s.estudiante_codigo || '—' }}</p>
                     </div>
                   </div>
                 </td>
@@ -245,7 +225,7 @@
 
                 <!-- Acciones -->
                 <td class="px-6 py-4">
-                  <div class="flex items-center justify-end gap-1">
+                  <div class="flex items-center justify-end gap-1" @click.stop>
 
                     <!-- Aprobar / Rechazar solo para estados procesables -->
                     <template v-if="s.estado === 'Pendiente' || s.estado === 'En Revisión'">
@@ -278,6 +258,7 @@
 
                     <!-- Ver detalle -->
                     <button
+                      @click="router.push({ name: 'SecretariaDetalle', params: { id: s.id } })"
                       title="Ver detalle"
                       class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
                     >
@@ -360,9 +341,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import adminService from '../services/adminService'
+import { useRouter } from 'vue-router'
+import solicitudesService from '../services/solicitudesService'
 import type { SolicitudAdmin, DashboardStats, EstadoSolicitud } from '../types'
 import SecretariaLayout from '../components/layout/SecretariaLayout.vue'
+
+const router = useRouter()
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 const PER_PAGE = 5
@@ -382,6 +366,7 @@ const PROGRAMAS = [
 
 // ─── Estado reactivo ─────────────────────────────────────────────────────────
 const stats          = ref<DashboardStats | null>(null)
+const todasSolicitudes = ref<SolicitudAdmin[]>([])
 const solicitudes    = ref<SolicitudAdmin[]>([])
 const total          = ref(0)
 const page           = ref(1)
@@ -392,20 +377,108 @@ const loadingStats   = ref(false)
 const loadingTabla   = ref(false)
 const procesando     = ref<string | number | null>(null)
 
+// ─── Mapear solicitud del backend al formato de la tabla ──────────────────────
+function mapearSolicitud(raw: any): SolicitudAdmin {
+  const programa = obtenerPrograma(raw)
+
+  return {
+    id: raw.id ?? raw.codigo_solicitud ?? '',
+    id_estudiante: raw.id_estudiante ?? raw.estudiante_id ?? '',
+    codigo_solicitud: raw.codigo_solicitud ?? `SOL-${raw.id}`,
+    tipo: raw.tipo ?? raw.tipo_solicitud ?? '',
+    estado: mapearEstado(raw.estado),
+    fecha_creacion: raw.fecha_creacion ?? raw.created_at ?? '',
+    fecha_actualizacion: raw.fecha_actualizacion ?? raw.updated_at ?? '',
+    estudiante_nombre: raw.estudiante_nombre ?? raw.estudiante?.nombre ?? raw.nombre_estudiante ?? '',
+    estudiante_codigo: raw.estudiante_codigo ?? raw.estudiante?.codigo ?? raw.codigo_estudiantil ?? '',
+    descripcion: raw.descripcion ?? raw.justificacion ?? '',
+    programa,
+    fechaEnvio: formatearFecha(raw.fecha_creacion ?? raw.created_at ?? ''),
+    estudiante: {
+      nombre: raw.estudiante_nombre ?? raw.estudiante?.nombre ?? raw.nombre_estudiante ?? 'Sin nombre',
+      codigo: raw.estudiante_codigo ?? raw.estudiante?.codigo ?? raw.codigo_estudiantil ?? '',
+      programa,
+      semestre: raw.semestre ?? raw.estudiante?.semestre ?? 0,
+      promedio: raw.promedio ?? raw.estudiante?.promedio ?? '',
+      email: raw.email ?? raw.estudiante?.email ?? '',
+      avatarUrl: raw.avatarUrl ?? raw.estudiante?.avatarUrl,
+    },
+  }
+}
+
+function mapearEstado(estado: string): EstadoSolicitud {
+  const mapa: Record<string, EstadoSolicitud> = {
+    'PENDIENTE': 'Pendiente',
+    'EN_REVISION': 'En Revisión',
+    'EN_PROCESO': 'En proceso',
+    'APROBADA': 'Aprobada',
+    'RECHAZADA': 'Rechazada',
+    'pendiente': 'Pendiente',
+    'en_revision': 'En Revisión',
+    'en_proceso': 'En proceso',
+    'aprobada': 'Aprobada',
+    'rechazada': 'Rechazada',
+  }
+  return mapa[estado] ?? estado as EstadoSolicitud
+}
+
+function formatearFecha(fecha: string): string {
+  if (!fecha) return ''
+  try {
+    return new Date(fecha).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  } catch {
+    return fecha
+  }
+}
+
+function obtenerPrograma(raw: any): string {
+  return (
+    raw.programa ??
+    raw.nombre_programa ??
+    raw.carrera ??
+    raw.estudiante?.programa ??
+    raw.estudiante?.nombre_programa ??
+    raw.estudiante?.carrera ??
+    '—'
+  )
+}
+
 // ─── Carga inicial ────────────────────────────────────────────────────────────
 onMounted(async () => {
   loadingStats.value = true
   loadingTabla.value = true
   try {
-    const [statsData, tablaData] = await Promise.all([
-      adminService.getStats().catch(() => null),
-      adminService.getSolicitudes({ page: 1, limit: PER_PAGE }),
-    ])
-    stats.value       = statsData
-    solicitudes.value = tablaData.data
-    total.value       = tablaData.total
-  } catch {
-    // Sin backend en dev: los valores fallback del template son suficientes
+    const datosRaw = await solicitudesService.obtenerSolicitudes()
+    console.log('📋 Solicitudes recibidas del backend:', datosRaw)
+    
+    const datos = (datosRaw as any[]).map(mapearSolicitud)
+    console.log('📋 Solicitudes mapeadas:', datos)
+    
+    todasSolicitudes.value = datos
+    aplicarFiltrosYPaginar()
+
+    // Calcular stats desde los datos
+    const pendientes = datos.filter(s => s.estado === 'Pendiente' || s.estado === 'En Revisión')
+    const aprobadasHoy = datos.filter(s => {
+      if (s.estado !== 'Aprobada') return false
+      const hoy = new Date().toISOString().slice(0, 10)
+      const fecha = s.fecha_actualizacion || s.fecha_creacion || ''
+      return fecha.startsWith(hoy)
+    })
+    stats.value = {
+      total_usuarios: 0,
+      estudiantes: 0,
+      secretarias: 0,
+      administradores: 0,
+      activos: 0,
+      inactivos: 0,
+      totalPendientes: pendientes.length,
+      nuevasUltimaHora: 0,
+      aprobadasHoy: aprobadasHoy.length,
+      metaDiariaPercent: 0,
+    }
+  } catch (err) {
+    console.error('❌ Error cargando solicitudes:', err)
   } finally {
     loadingStats.value = false
     loadingTabla.value = false
@@ -413,43 +486,59 @@ onMounted(async () => {
 })
 
 // ─── Fetch al cambiar página ──────────────────────────────────────────────────
-watch(page, fetchTabla)
+watch(page, aplicarFiltrosYPaginar)
 
-async function fetchTabla() {
-  loadingTabla.value = true
-  try {
-    const res = await adminService.getSolicitudes({
-      page:     page.value,
-      limit:    PER_PAGE,
-      search:   search.value   || undefined,
-      programa: filterPrograma.value || undefined,
-      estado:   filterEstado.value   || undefined,
-    })
-    solicitudes.value = res.data
-    total.value       = res.total
-  } catch {
-    // silencio
-  } finally {
-    loadingTabla.value = false
+function aplicarFiltrosYPaginar() {
+  let filtradas = [...todasSolicitudes.value]
+
+  if (search.value) {
+    const q = search.value.toLowerCase()
+    filtradas = filtradas.filter(s =>
+      String(s.id).toLowerCase().includes(q) ||
+      s.estudiante_nombre?.toLowerCase().includes(q) ||
+      s.estudiante_codigo?.toLowerCase().includes(q) ||
+      s.codigo_solicitud?.toLowerCase().includes(q) ||
+      s.estudiante?.nombre?.toLowerCase().includes(q) ||
+      s.estudiante?.codigo?.toLowerCase().includes(q)
+    )
   }
+
+  if (filterPrograma.value) {
+    filtradas = filtradas.filter(s => s.programa === filterPrograma.value)
+  }
+
+  if (filterEstado.value) {
+    filtradas = filtradas.filter(s => s.estado === filterEstado.value)
+  }
+
+  total.value = filtradas.length
+
+  const start = (page.value - 1) * PER_PAGE
+  solicitudes.value = filtradas.slice(start, start + PER_PAGE)
 }
 
 function onFilterChange() {
   page.value = 1
-  fetchTabla()
+  aplicarFiltrosYPaginar()
 }
 
 // ─── Acciones fila ────────────────────────────────────────────────────────────
 async function aprobar(id: number | string) {
   procesando.value = id
   try {
-    await adminService.aprobar(String(id))
+    await solicitudesService.actualizarEstado(id, { estado: 'aprobada' })
     const idx = solicitudes.value.findIndex(s => s.id === id)
     if (idx !== -1) {
       const current = solicitudes.value[idx]
       if (current) {
         solicitudes.value[idx] = { ...current, estado: 'Aprobada' as EstadoSolicitud }
       }
+    }
+    // Actualizar también en la lista completa
+    const idxAll = todasSolicitudes.value.findIndex(s => s.id === id)
+    if (idxAll !== -1) {
+      const c = todasSolicitudes.value[idxAll]
+      if (c) todasSolicitudes.value[idxAll] = { ...c, estado: 'Aprobada' as EstadoSolicitud }
     }
   } finally {
     procesando.value = null
@@ -459,7 +548,7 @@ async function aprobar(id: number | string) {
 async function rechazar(id: number | string) {
   procesando.value = id
   try {
-    await adminService.rechazar(String(id))
+    await solicitudesService.actualizarEstado(id, { estado: 'rechazada' })
     const idx = solicitudes.value.findIndex(s => s.id === id)
     if (idx !== -1) {
       const current = solicitudes.value[idx]
@@ -467,13 +556,14 @@ async function rechazar(id: number | string) {
         solicitudes.value[idx] = { ...current, estado: 'Rechazada' as EstadoSolicitud }
       }
     }
+    const idxAll = todasSolicitudes.value.findIndex(s => s.id === id)
+    if (idxAll !== -1) {
+      const c = todasSolicitudes.value[idxAll]
+      if (c) todasSolicitudes.value[idxAll] = { ...c, estado: 'Rechazada' as EstadoSolicitud }
+    }
   } finally {
     procesando.value = null
   }
-}
-
-function exportarReporte() {
-  adminService.exportarReporte().catch(() => {})
 }
 
 // ─── Computed ────────────────────────────────────────────────────────────────

@@ -1,31 +1,44 @@
 // ═══════════════════════════════════════════════════════════════════════════
+// TIPOS DE RESPUESTA BASE API
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface ApiResponse<T> {
+  ok: boolean
+  mensaje: string
+  datos: T
+  codigo_estado: number
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // TIPOS DE AUTENTICACIÓN
 // ═══════════════════════════════════════════════════════════════════════════
 
 export type RolUsuario = 'Administrador' | 'Secretaria' | 'Estudiante' | 'Docente'
+export type RolUsuarioBackend = 'estudiante' | 'secretaria' | 'admin'
 
 export interface LoginPayload {
     codigoEstudiantil: string
-    password: string   
+  password: string
 }
 
 export interface LoginResponse {
-    token: string
-    requiresPasswordChange: boolean
+  token: string
     student: StudentInfo
+    requiresPasswordChange: boolean
 }
 
 export interface ChangePasswordPayload {
-    password_actual: string
-    password_nueva: string
-    password_confirmacion: string
+  password_actual: string
+  password_nueva: string
+  // Si tu formulario lo usa en UI, déjalo como opcional solo frontend
+  password_confirmacion?: string
 }
 
 export interface ChangePasswordResponse {
     token: string
     student: StudentInfo
+    requiresPasswordChange?: boolean
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // TIPOS DE ESTUDIANTE
 // ═══════════════════════════════════════════════════════════════════════════
@@ -33,12 +46,20 @@ export interface ChangePasswordResponse {
 export interface StudentInfo {
     id: string
     nombre: string
+    nombre_completo?: string
     codigo: string
+    cod_alumno?: string
     rol?: RolUsuario
     carrera?: string
     programa?: string
-    semestre?: number
     email?: string
+    email_institucional?: string
+    semestre?: number
+    jornada?: string
+    creditos_inscritos?: number
+    creditos_max_permitidos?: number
+    estado_academico?: string
+    matricula_activa?: boolean
     requiresPasswordChange?: boolean
     avatarUrl?: string
     promedio?: string | number
@@ -106,11 +127,11 @@ export interface UsuarioAdmin {
 
 export interface CreateUsuarioPayload {
     nombre_completo: string
-    codigo_estudiantil?: string
+    codigo_estudiantil: string  // ⚠️ REQUERIDO por backend
     codigo_institucional?: string
-    email_institucional?: string
+    email_institucional: string  // ⚠️ REQUERIDO
     email?: string
-    rol: RolUsuario
+    rol: RolUsuario | 'ADMIN' | 'SECRETARIA' | 'ESTUDIANTE' | 'DOCENTE'
     carrera?: string
     programa?: string
     semestre?: number
@@ -217,10 +238,19 @@ export interface DashboardStats {
 }
 
 export interface PerfilAcademico {
-    carrera: string
+    cod_alumno?: string
+    nombre_completo?: string
+    email_institucional?: string
+    carrera?: string
     programa: string
+    nombre_programa?: string
     semestre: number
-    promedio: number
+    promedio?: number
+    jornada: string
+    creditos_inscritos: number
+    creditos_max_permitidos: number
+    estado_academico: string
+    matricula_activa: boolean
 }
 
 export interface AdjuntoDocumento {
@@ -232,21 +262,44 @@ export interface AdjuntoDocumento {
 
 export interface Grupo {
     id: number
-    codigo: string
-    nombre: string
-    carrera: string
-    semestre: number
-    profesor: string
-    horario: string
+    codigo_grupo: string
+    nombre_curso: string
+    cod_curso: string
+    jornada: string
+    dia_semana: string
+    hora_inicio: string
+    hora_fin: string
+    docente: string
+    aula: string | null
+    cupo_maximo: number
+    cupos_ocupados: number
+    cupos_disponibles: number
+    periodo: string
 }
 
 export interface FiltrosGrupos {
-    carrera?: string
-    semestre?: number
-    programa?: string
     periodo?: string
     curso_id?: number
     jornada?: string
+}
+
+export interface MateriaMatriculada {
+    id: number
+    codigo_grupo: string
+    nombre_curso: string
+    cod_curso: string
+    jornada: string
+    dia_semana: string
+    hora_inicio: string
+    hora_fin: string
+    docente: string
+    aula: string | null
+    cupo_maximo: number
+    cupos_ocupados: number
+    cupos_disponibles: number
+    periodo: string
+    creditos?: number
+    nota_parcial?: number | null
 }
 
 export interface NavItem {
@@ -256,4 +309,74 @@ export interface NavItem {
     route?: string
     children?: NavItem[]
     active?: boolean
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TIPOS DE RESPUESTA - CREACIÓN DE SOLICITUD
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface ValidacionItem {
+    nombre: string
+    resultado: boolean
+    detalle: string
+}
+
+export interface ValidacionJson {
+    timestamp: string
+    tipo_solicitud: string
+    aprobado: boolean
+    validaciones: ValidacionItem[]
+}
+
+export interface SolicitudCreada {
+    id: number
+    codigo_solicitud: string
+    estado: string
+    tipo_solicitud: string
+    validacion_json: ValidacionJson
+    created_at: string
+}
+
+export interface CrearSolicitudResponse {
+    ok: boolean
+    mensaje: string
+    datos: SolicitudCreada
+    codigo_estado: number
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TIPOS DE NOTIFICACIONES
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type TipoNotificacion =
+    | 'solicitud_nueva'
+    | 'solicitud_aprobada'
+    | 'solicitud_rechazada'
+    | 'solicitud_revision'
+    | 'cambio_estado'
+    | 'general'
+
+export type CanalEnvio = 'websocket' | 'fcm' | 'bd_pendiente' | 'fallback'
+
+export interface Notificacion {
+    id: number
+    usuario_id: number
+    solicitud_id?: number | null
+    titulo: string
+    mensaje: string
+    tipo_notificacion: TipoNotificacion | string
+    canal_envio?: CanalEnvio | string
+    leido: boolean
+    created_at: string
+    updated_at?: string
+}
+
+export interface NotificacionesPaginadas {
+    datos: Notificacion[]
+    total: number
+}
+
+export interface EstadisticasNotificacionesNoLeidas {
+    total: number
+    por_tipo: Record<string, number>
 }

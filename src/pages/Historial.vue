@@ -7,12 +7,6 @@
         <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Historial de Solicitudes</h1>
         <p class="text-sm text-slate-400 mt-1">Consulta el estado y seguimiento de tus trámites académicos activos y pasados.</p>
       </div>
-      <RouterLink :to="{ name: 'NuevaSolicitud' }">
-        <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-semibold transition-all">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Nueva Solicitud
-        </button>
-      </RouterLink>
     </div>
 
     <!-- Search + filtros pill -->
@@ -114,13 +108,6 @@
           </div>
         </div>
 
-        <!-- Card footer -->
-        <div class="border-t border-slate-100 px-5 py-3">
-          <button class="flex items-center gap-1.5 text-[12.5px] font-semibold text-indigo-600 hover:text-indigo-700 transition-colors group">
-            Ver detalles completos
-            <svg class="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </button>
-        </div>
       </div>
     </div>
 

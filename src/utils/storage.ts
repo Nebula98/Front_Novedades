@@ -21,7 +21,7 @@ export const Storage = {
   /**
    * Almacena información del estudiante
    */
-  setStudent(student: Record<string, unknown>): void {
+  setStudent<T>(student: T): void {
     localStorage.setItem('auth_student', JSON.stringify(student))
   },
 

@@ -98,8 +98,7 @@ import type { NavItem } from '../../types'
 defineEmits<{ logout: [] }>()
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard',             routeName: 'AdminDashboard',   iconKey: 'home'  },
-  { label: 'Gestionar Solicitudes', routeName: 'AdminUsuarios',    iconKey: 'history' },
-  { label: 'Configuración',         routeName: 'Dashboard',        iconKey: 'shield'      },
+  { label: 'Dashboard',             routeName: 'SecretariaSolicitudes', iconKey: 'home'    },
+  { label: 'Gestionar Solicitudes', routeName: 'SecretariaSolicitudes', iconKey: 'history' },
 ]
 </script>

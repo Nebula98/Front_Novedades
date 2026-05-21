@@ -34,7 +34,50 @@
     </div>
 
     <!-- ── Stats ── -->
-    <div class="grid grid-cols-2 gap-4 mb-7">
+    <div class="grid grid-cols-4 gap-4 mb-7">
+
+      <!-- Total Usuarios -->
+      <div class="bg-white border border-slate-200 rounded-2xl px-7 py-6 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[12.5px] font-semibold text-slate-500 mb-2">Total Usuarios</p>
+          <div v-if="loadingStats" class="h-10 w-20 bg-slate-100 rounded-xl animate-pulse mb-2" />
+          <p v-else class="text-[38px] font-bold text-slate-900 tracking-tight leading-none mb-2">
+            {{ stats?.total_usuarios ?? stats?.totalUsuarios ?? 0 }}
+          </p>
+          <p class="text-[12px] text-slate-400">
+            En el sistema
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Usuarios Activos -->
+      <div class="bg-white border border-slate-200 rounded-2xl px-7 py-6 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[12.5px] font-semibold text-slate-500 mb-2">Usuarios Activos</p>
+          <div v-if="loadingStats" class="h-10 w-20 bg-slate-100 rounded-xl animate-pulse mb-2" />
+          <p v-else class="text-[38px] font-bold text-slate-900 tracking-tight leading-none mb-2">
+            {{ stats?.activos ?? stats?.usuariosActivos ?? 0 }}
+          </p>
+          <p class="text-[12px] text-slate-400">
+            {{ porcentajeActivosLabel }}% del total
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-500 shrink-0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </div>
+      </div>
 
       <!-- Total Pendientes -->
       <div class="bg-white border border-slate-200 rounded-2xl px-7 py-6 shadow-sm flex items-center justify-between">
@@ -42,7 +85,7 @@
           <p class="text-[12.5px] font-semibold text-slate-500 mb-2">Total Pendientes</p>
           <div v-if="loadingStats" class="h-10 w-20 bg-slate-100 rounded-xl animate-pulse mb-2" />
           <p v-else class="text-[38px] font-bold text-slate-900 tracking-tight leading-none mb-2">
-            {{ stats?.totalPendientes ?? 42 }}
+            {{ stats?.totalPendientes ?? stats?.solicitudes_pendientes ?? 42 }}
           </p>
           <p class="text-[12px] text-slate-400">
             +{{ stats?.nuevasUltimaHora ?? 5 }} recibidas en la última hora
@@ -63,10 +106,10 @@
           <p class="text-[12.5px] font-semibold text-slate-500 mb-2">Aprobadas Hoy</p>
           <div v-if="loadingStats" class="h-10 w-20 bg-slate-100 rounded-xl animate-pulse mb-2" />
           <p v-else class="text-[38px] font-bold text-slate-900 tracking-tight leading-none mb-2">
-            {{ stats?.aprobadasHoy ?? 128 }}
+            {{ stats?.solicitudes_aprobadas ?? 128 }}
           </p>
           <p class="text-[12px] text-slate-400">
-            {{ stats?.metaDiariaPercent ?? 85 }}% de la meta diaria alcanzada
+            {{ stats?.metaDiariaPercent ?? 85 }}% de la meta diaria
           </p>
         </div>
         <div class="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-500 shrink-0">
@@ -361,6 +404,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import adminService from '../services/adminService'
+import usuariosService from '../services/usuariosService'
 import type { SolicitudAdmin, DashboardStats, EstadoSolicitudAdmin } from '../types'
 import SecretariaLayout from '../components/layout/SecretariaLayout.vue'
 
@@ -392,16 +436,48 @@ const loadingStats   = ref(false)
 const loadingTabla   = ref(false)
 const procesando     = ref<string | null>(null)
 
+function mergeStats(adminStats: DashboardStats | null, usuariosStats: Partial<DashboardStats> | null): DashboardStats | null {
+  if (!adminStats && !usuariosStats) return null
+
+  const totalUsuariosAdmin = adminStats?.total_usuarios ?? adminStats?.totalUsuarios ?? 0
+  const totalUsuariosUsuarios = usuariosStats?.total_usuarios ?? usuariosStats?.totalUsuarios ?? 0
+  const totalUsuarios = totalUsuariosAdmin > 0 ? totalUsuariosAdmin : totalUsuariosUsuarios
+
+  const activosAdmin = adminStats?.activos ?? adminStats?.usuariosActivos ?? 0
+  const activosUsuarios = usuariosStats?.activos ?? usuariosStats?.usuariosActivos ?? 0
+  const activos = activosAdmin > 0 ? activosAdmin : activosUsuarios
+
+  return {
+    total_usuarios: totalUsuarios,
+    totalUsuarios,
+    estudiantes: adminStats?.estudiantes ?? usuariosStats?.estudiantes ?? 0,
+    secretarias: adminStats?.secretarias ?? usuariosStats?.secretarias ?? 0,
+    administradores: adminStats?.administradores ?? usuariosStats?.administradores ?? 0,
+    activos,
+    usuariosActivos: activos,
+    inactivos: adminStats?.inactivos ?? usuariosStats?.inactivos ?? 0,
+    solicitudes_pendientes: adminStats?.solicitudes_pendientes ?? 0,
+    totalPendientes: adminStats?.totalPendientes ?? 0,
+    solicitudes_aprobadas: adminStats?.solicitudes_aprobadas ?? 0,
+    nuevasUltimaHora: adminStats?.nuevasUltimaHora ?? 0,
+    crecimientoSemestre: adminStats?.crecimientoSemestre ?? 0,
+    porcentajeActivos: adminStats?.porcentajeActivos,
+    aprobadasHoy: adminStats?.aprobadasHoy ?? 0,
+    metaDiariaPercent: adminStats?.metaDiariaPercent ?? 0,
+  }
+}
+
 // ─── Carga inicial ────────────────────────────────────────────────────────────
 onMounted(async () => {
   loadingStats.value = true
   loadingTabla.value = true
   try {
-    const [statsData, tablaData] = await Promise.all([
+    const [statsData, usuariosStatsData, tablaData] = await Promise.all([
       adminService.getStats().catch(() => null),
+      usuariosService.obtenerEstadisticas().catch(() => null),
       adminService.getSolicitudes({ page: 1, limit: PER_PAGE }),
     ])
-    stats.value       = statsData
+    stats.value       = mergeStats(statsData, usuariosStatsData)
     solicitudes.value = tablaData.data
     total.value       = tablaData.total
   } catch {
@@ -478,6 +554,14 @@ const rangoLabel = computed(() => {
   const from = (page.value - 1) * PER_PAGE + 1
   const to   = Math.min(page.value * PER_PAGE, total.value)
   return `${from} a ${to}`
+})
+
+const porcentajeActivosLabel = computed(() => {
+  if (!stats.value) return 0
+  const total = stats.value.total_usuarios || stats.value.totalUsuarios || 0
+  const activos = stats.value.activos || stats.value.usuariosActivos || 0
+  if (total === 0) return 0
+  return Math.round((activos / total) * 100)
 })
 
 const pageButtons = computed(() => {

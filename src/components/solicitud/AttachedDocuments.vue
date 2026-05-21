@@ -55,10 +55,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+
+const props = defineProps<{ modelValue: File[] }>()
+const emit = defineEmits<{ (e: 'update:modelValue', value: File[]): void }>()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
-const archivos = ref<File[]>([])
+const archivos = ref<File[]>(props.modelValue)
+
+// Sincronizar cambios del padre
+watch(() => props.modelValue, (newVal) => {
+  archivos.value = newVal
+})
+
+// Emitir cambios al padre
+watch(archivos, (newVal) => {
+  emit('update:modelValue', newVal)
+}, { deep: true })
 
 function triggerFileInput() {
   fileInputRef.value?.click()

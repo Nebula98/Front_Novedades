@@ -22,8 +22,15 @@ interface BackendLoginResponse {
     codigo_estudiantil?: string
     carrera?: string
     programa?: string
+    nombre_programa?: string
     semestre?: number
     email?: string
+    email_institucional?: string
+    jornada?: string
+    creditos_inscritos?: number
+    creditos_max_permitidos?: number
+    estado_academico?: string
+    matricula_activa?: boolean
     promedio?: string | number
     avatarUrl?: string
   }
@@ -66,26 +73,44 @@ const authApi = {
       password: payload.password
     }
 
+    console.log('📤 Enviando login con:', sendPayload)
     const { data } = await http.post<BackendLoginResponse>('/auth/login', sendPayload)
+    
+    console.log('📥 Respuesta recibida:', data)
+    console.log('📥 datos.token:', data.datos?.token)
+    console.log('📥 datos.id_usuario:', data.datos?.id_usuario)
+    console.log('📥 datos.nombre_completo:', data.datos?.nombre_completo)
 
     const normalizedRol = normalizeRole(data.datos.rol)
+    console.log('🎭 Rol normalizado:', normalizedRol)
 
-    return {
+    const result: LoginResponse = {
       token: data.datos.token,
       student: {
         id: String(data.datos.id_usuario),
         nombre: data.datos.nombre_completo,
+        nombre_completo: data.datos.nombre_completo,
         codigo: data.datos.codigo_estudiantil || '',
+        cod_alumno: data.datos.codigo_estudiantil,
         rol: normalizedRol,
         carrera: data.datos.carrera || '',
         programa: data.datos.programa,
-        semestre: data.datos.semestre,
         email: data.datos.email,
+        email_institucional: data.datos.email_institucional,
+        semestre: data.datos.semestre,
+        jornada: data.datos.jornada,
+        creditos_inscritos: data.datos.creditos_inscritos,
+        creditos_max_permitidos: data.datos.creditos_max_permitidos,
+        estado_academico: data.datos.estado_academico,
+        matricula_activa: data.datos.matricula_activa,
         promedio: data.datos.promedio,
         avatarUrl: data.datos.avatarUrl,
       },
       requiresPasswordChange: data.datos.primer_login,
     }
+
+    console.log('✅ Resultado login:', result)
+    return result
   },
 
   /**
@@ -101,17 +126,39 @@ const authApi = {
       student: {
         id: String(data.datos.id_usuario),
         nombre: data.datos.nombre_completo,
+        nombre_completo: data.datos.nombre_completo,
         codigo: data.datos.codigo_estudiantil || '',
+        cod_alumno: data.datos.codigo_estudiantil,
         rol: normalizedRol,
         carrera: data.datos.carrera || '',
         programa: data.datos.programa,
-        semestre: data.datos.semestre,
         email: data.datos.email,
+        email_institucional: data.datos.email_institucional,
+        semestre: data.datos.semestre,
+        jornada: data.datos.jornada,
+        creditos_inscritos: data.datos.creditos_inscritos,
+        creditos_max_permitidos: data.datos.creditos_max_permitidos,
+        estado_academico: data.datos.estado_academico,
+        matricula_activa: data.datos.matricula_activa,
         promedio: data.datos.promedio,
         avatarUrl: data.datos.avatarUrl,
       },
       requiresPasswordChange: false,
     }
+  },
+
+  /**
+   * 🔐 RECUPERAR CONTRASEÑA - Inicia el flujo de recuperación
+   * 
+   * @param codigoEstudiantil - Código del estudiante
+   * @returns Mensaje genérico (sin revelar si el código existe o no)
+   */
+  async forgotPassword(codigoEstudiantil: string): Promise<{ mensaje: string }> {
+    const { data } = await http.post<{ ok: boolean; mensaje: string }>('/auth/forgot-password', {
+      codigo_estudiantil: codigoEstudiantil
+    })
+    
+    return { mensaje: data.mensaje }
   },
 
   /**

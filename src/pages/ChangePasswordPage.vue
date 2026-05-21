@@ -38,7 +38,7 @@
          <div class="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 mb-2">
             <div class="w-8 h-8 rounded-full bg-linear-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                 {{
-                    authStore.mockStudent.nombre
+                                        (authStore.student?.nombre || authStore.mockStudent.nombre)
                     .split(' ')
                     .map(n => n[0])
                     .slice(0,2)
@@ -47,8 +47,8 @@
                 }}
             </div>
           <div class="min-w-0">
-            <p class="text-[13px] font-semibold text-slate-700 truncate">{{ authStore.mockStudent.nombre }}</p>
-            <p class="text-[11px] text-slate-400">Código: {{ authStore.mockStudent.codigo }}</p>
+                        <p class="text-[13px] font-semibold text-slate-700 truncate">{{ authStore.student?.nombre || authStore.mockStudent.nombre }}</p>
+                        <p class="text-[11px] text-slate-400">Código: {{ authStore.student?.codigo || authStore.mockStudent.codigo }}</p>
           </div>
           <span class="ml-auto text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg whitespace-nowrap">Primer acceso</span>
         </div>
@@ -83,8 +83,15 @@ onMounted(() => authStore.clearError());
  async function handleChangePassword(payload: ChangePasswordPayload) {
     try {
         await authStore.changePassword(payload);
-        // Cambio exitoso -> ir al dashboard
-        await router.push({ name: 'Dashboar' });
+        // Cambio exitoso -> ir al home según rol
+        const rol = authStore.student?.rol
+        if (rol === 'Administrador') {
+            await router.push({ name: 'AdminUsuarios' })
+        } else if (rol === 'Secretaria') {
+            await router.push({ name: 'SecretariaDashboard' })
+        } else {
+            await router.push({ name: 'Dashboard' })
+        }
     } catch {
         // El error se muestra en AlertMessage via authStore.error
     }

@@ -9,7 +9,7 @@
 
     <div class="space-y-6">
 
-      <HistoryHeader @nueva-solicitud="router.push({ name: 'NuevaSolicitud' })" />
+      <HistoryHeader />
 
       <HistoryFilters
         v-model:busqueda="busqueda"
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import DashboardLayout from '../components/dashboard/DashboardLayout.vue'
@@ -45,20 +45,63 @@ import HistoryGrid from '../components/historial/HistoryGrid.vue'
 import PaginationHistory from '../components/historial/PaginationHistory.vue'
 
 import { useAuthStore } from '../store/authStore'
+import solicitudesService from '../services/solicitudesService'
 import type { EstadoSolicitud } from '../types'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-// ─── Datos mock ──────────────────────────────────────────────
-const solicitudes = ref([
-  { id: 'CJ-2023-8842', tipo: 'Cambio de Jornada',       descripcion: 'Solicitud de cambio de jornada diurna a nocturna por motivos laborales.',    fechaEnvio: '2023-10-12', facultad: 'Facultad de Ingeniería',  estado: 'Aprobada'   as EstadoSolicitud },
-  { id: 'AC-2023-1120', tipo: 'Adición de Curso',        descripcion: 'Adición de la asignatura "Cálculo Multivariado" fuera de fechas.',            fechaEnvio: '2023-11-15', facultad: 'Facultad de Ciencias',    estado: 'Pendiente'  as EstadoSolicitud },
-  { id: 'CD-2024-0051', tipo: 'Curso Dirigido',          descripcion: 'Solicitud de curso dirigido para la asignatura "Ética Profesional".',         fechaEnvio: '2024-02-02', facultad: 'Facultad de Humanidades', estado: 'Rechazada'  as EstadoSolicitud },
-  { id: 'CS-2024-0992', tipo: 'Cancelación de Semestre', descripcion: 'Cancelación total del semestre 2024-1 por calamidad doméstica.',              fechaEnvio: '2024-03-10', facultad: 'Facultad de Ingeniería',  estado: 'En proceso' as EstadoSolicitud },
-  { id: 'ES-2024-1543', tipo: 'Examen Supletorio',       descripcion: 'Supletorio del parcial final de "Base de Datos I".',                         fechaEnvio: '2024-03-22', facultad: 'Facultad de Ingeniería',  estado: 'Aprobada'   as EstadoSolicitud },
-  { id: 'CP-2024-3321', tipo: 'Cambio de Programa',      descripcion: 'Traslado del programa de Ingeniería Civil a Ingeniería de Sistemas.',         fechaEnvio: '2024-04-05', facultad: 'Facultad de Ingeniería',  estado: 'Pendiente'  as EstadoSolicitud },
-])
+// ─── Datos ────────────────────────────────────────────────────
+const solicitudes = ref<any[]>([])
+const isLoadingSolicitudes = ref(false)
+
+function normalizarEstado(estadoRaw?: string): EstadoSolicitud {
+  const estado = String(estadoRaw || '').trim().toLowerCase()
+
+  if (estado === 'aprobada') return 'Aprobada'
+  if (estado === 'rechazada') return 'Rechazada'
+  if (estado === 'en revisión' || estado === 'en_revision') return 'En Revisión'
+  if (estado === 'en proceso') return 'En proceso'
+  if (estado === 'pendiente') return 'Pendiente'
+
+  return 'Pendiente'
+}
+
+function obtenerJustificacionRechazo(solicitud: any): string {
+  return (
+    solicitud?.razon_rechazo ||
+    solicitud?.razonRechazo ||
+    solicitud?.observaciones ||
+    solicitud?.observacion_secretaria ||
+    solicitud?.justificacion_secretaria ||
+    ''
+  )
+}
+
+// Cargar solicitudes al montar
+onMounted(async () => {
+  console.log('📊 History: Cargando historial de solicitudes...')
+  isLoadingSolicitudes.value = true
+  try {
+    const data = await solicitudesService.getMisSolicitudes()
+    console.log('✅ Historial cargado:', data)
+
+    solicitudes.value = (data || []).map((s: any) => ({
+      id: String(s.codigo_solicitud || s.id || ''),
+      tipo: s.tipo_solicitud || s.tipo || 'Solicitud Académica',
+      descripcion: s.descripcion || s.justificacion || '',
+      fechaEnvio: s.fecha_envio || s.fecha_creacion || s.created_at || new Date().toISOString(),
+      facultad: s.facultad || s.programa || 'Facultad de Ingeniería',
+      estado: normalizarEstado(s.estado),
+      justificacionRechazo: obtenerJustificacionRechazo(s)
+    }))
+  } catch (error) {
+    console.error('❌ Error al cargar historial:', error)
+    solicitudes.value = []
+  } finally {
+    isLoadingSolicitudes.value = false
+  }
+})
 
 // ─── Búsqueda y filtros ──────────────────────────────────────
 const busqueda = ref('')

@@ -8,4 +8,20 @@ export default defineConfig({
     vue(),
     tailwindcss()
   ],
+  server: {
+    proxy: {
+      '/api': {
+        // URL de despliegue (comentada mientras se trabaja en local):
+        //target: 'https://proyecto-novedades-six.vercel.app',
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.removeHeader('origin')
+          })
+        },
+      },
+    },
+  },
 })

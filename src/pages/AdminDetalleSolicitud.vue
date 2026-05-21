@@ -6,7 +6,7 @@
       <!-- Volver + ID + estado -->
       <div class="flex items-center gap-4">
         <button
-          @click="router.push({ name: 'AdminSolicitudes' })"
+          @click="router.back()"
           class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -22,17 +22,6 @@
         </div>
       </div>
 
-      <!-- Descargar PDF -->
-      <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-sm font-semibold transition-all">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="12" y1="18" x2="12" y2="12"/>
-          <polyline points="9 15 12 18 15 15"/>
-        </svg>
-        Descargar PDF
-      </button>
     </div>
 
     <!-- Skeleton global -->
@@ -72,35 +61,34 @@
           <div class="px-6 py-5 flex items-center gap-6">
             <!-- Avatar -->
             <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-slate-300 to-slate-500 flex items-center justify-center text-white text-xl font-bold shrink-0 overflow-hidden shadow-sm">
-              <img v-if="solicitud.estudiante.avatarUrl" :src="solicitud.estudiante.avatarUrl" class="w-full h-full object-cover" alt="" />
-              <span v-else>{{ solicitud.estudiante.nombre.charAt(0) }}</span>
+              <span>{{ solicitud.estudiante?.nombre?.charAt(0) ?? '?' }}</span>
             </div>
 
             <!-- Grid de datos -->
             <div class="grid grid-cols-3 gap-x-8 gap-y-4 flex-1">
               <div>
                 <p class="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">Nombre Completo</p>
-                <p class="text-[13px] font-semibold text-slate-800">{{ solicitud.estudiante.nombre }}</p>
+                <p class="text-[13px] font-semibold text-slate-800">{{ solicitud.estudiante?.nombre ?? '—' }}</p>
               </div>
               <div>
                 <p class="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">Código Estudiantil</p>
-                <p class="text-[13px] font-semibold text-slate-800 font-mono">{{ solicitud.estudiante.codigo }}</p>
+                <p class="text-[13px] font-semibold text-slate-800 font-mono">{{ solicitud.estudiante?.codigo ?? '—' }}</p>
               </div>
               <div>
                 <p class="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">Programa Académico</p>
-                <p class="text-[13px] font-semibold text-slate-800">{{ solicitud.estudiante.programa }}</p>
+                <p class="text-[13px] font-semibold text-slate-800">{{ solicitud.estudiante?.programa ?? '—' }}</p>
               </div>
               <div>
                 <p class="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">Semestre Actual</p>
-                <p class="text-[13px] font-semibold text-slate-800">{{ solicitud.estudiante.semestre }}</p>
+                <p class="text-[13px] font-semibold text-slate-800">{{ solicitud.estudiante?.semestre ?? '—' }}</p>
               </div>
               <div>
                 <p class="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">Promedio (PAPA)</p>
-                <p class="text-[13px] font-semibold text-slate-800">{{ solicitud.estudiante.promedio }}</p>
+                <p class="text-[13px] font-semibold text-slate-800">{{ solicitud.estudiante?.promedio ?? '—' }}</p>
               </div>
               <div>
                 <p class="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">Correo Institucional</p>
-                <p class="text-[13px] font-semibold text-slate-800 truncate">{{ solicitud.estudiante.correo }}</p>
+                <p class="text-[13px] font-semibold text-slate-800 truncate">{{ solicitud.estudiante?.email ?? '—' }}</p>
               </div>
             </div>
           </div>
@@ -330,7 +318,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import adminService from '../services/adminService'
+import solicitudesService from '../services/solicitudesService'
+import usuariosService from '../services/usuariosService'
 import type { SolicitudDetalle, EstadoSolicitudAdmin } from '../types'
 import SecretariaLayout from '../components/layout/SecretariaLayout.vue'
 
@@ -352,7 +341,54 @@ const toast          = ref<{ tipo: 'exito' | 'error'; mensaje: string } | null>(
 onMounted(async () => {
   isLoading.value = true
   try {
-    solicitud.value = await adminService.getDetalle(id)
+    const raw = await solicitudesService.getDetalle(id) as unknown as SolicitudDetalle & Record<string, any>
+    console.log('📋 Detalle solicitud raw:', JSON.stringify(raw, null, 2))
+
+    // Mapear campos del backend al formato que espera el template
+    raw.tipo = raw.tipo ?? raw.tipo_solicitud ?? '—'
+    raw.estado = mapearEstado(raw.estado)
+    raw.radicadoFecha = raw.radicadoFecha ?? formatearFecha(raw.created_at)
+    raw.justificacion = raw.justificacion ?? raw.motivo ?? '—'
+    raw.estadoActual = raw.estadoActual ?? raw.estado ?? '—'
+    raw.estadoSolicitado = raw.estadoSolicitado ?? raw.tipo_solicitud?.replace(/_/g, ' ') ?? '—'
+
+    const estudianteBase = {
+      nombre: raw.estudiante?.nombre ?? raw.estudiante_nombre ?? raw.nombre_estudiante ?? raw.nombre ?? '—',
+      codigo: raw.estudiante?.codigo ?? raw.estudiante_codigo ?? raw.codigo_estudiantil ?? raw.cod_alumno ?? '—',
+      programa: raw.estudiante?.programa ?? raw.programa ?? raw.nombre_programa ?? raw.carrera ?? '—',
+      semestre: raw.estudiante?.semestre ?? raw.semestre ?? 0,
+      promedio: raw.estudiante?.promedio ?? raw.promedio ?? '—',
+      email: raw.estudiante?.email ?? raw.email ?? raw.email_institucional ?? '—',
+    }
+
+    // Cargar datos reales del estudiante usando cod_alumno
+    const codAlumno = raw.cod_alumno ?? raw.codigo_estudiantil
+    if (codAlumno) {
+      try {
+        const resultado = await usuariosService.buscarUsuarios(codAlumno, 1)
+        console.log('👤 Resultado búsqueda estudiante:', JSON.stringify(resultado, null, 2))
+        const usuario = resultado.resultados?.[0]
+        if (usuario) {
+          raw.estudiante = {
+            nombre:   usuario.nombre_completo ?? usuario.nombre ?? estudianteBase.nombre,
+            codigo:   usuario.codigo_estudiantil ?? usuario.codigo_institucional ?? codAlumno,
+            programa: usuario.programa ?? usuario.carrera ?? estudianteBase.programa,
+            semestre: usuario.semestre ?? estudianteBase.semestre,
+            promedio: usuario.promedio ?? estudianteBase.promedio,
+            email:    usuario.email_institucional ?? usuario.email ?? estudianteBase.email,
+          }
+        } else {
+          raw.estudiante = fallbackEstudiante(raw, codAlumno, estudianteBase)
+        }
+      } catch (e) {
+        console.warn('⚠️ No se pudo buscar estudiante:', e)
+        raw.estudiante = fallbackEstudiante(raw, codAlumno, estudianteBase)
+      }
+    } else if (!raw.estudiante || !raw.estudiante.nombre) {
+      raw.estudiante = fallbackEstudiante(raw, '', estudianteBase)
+    }
+
+    solicitud.value = raw
   } catch (err: unknown) {
     error.value = (err as { message?: string })?.message ?? 'No se pudo cargar la solicitud.'
   } finally {
@@ -371,7 +407,11 @@ async function resolver(accion: 'aprobar' | 'rechazar') {
 
   procesando.value = accion
   try {
-    await adminService.resolver(id, { accion, observaciones: observaciones.value })
+    const nuevoEstado = accion === 'aprobar' ? 'aprobada' : 'rechazada'
+    await solicitudesService.actualizarEstado(id, {
+      estado: nuevoEstado,
+      observaciones: observaciones.value,
+    })
 
     // Actualizar estado localmente
     if (solicitud.value) {
@@ -386,7 +426,7 @@ async function resolver(accion: 'aprobar' | 'rechazar') {
     )
 
     // Redirigir al listado tras 2 s
-    setTimeout(() => router.push({ name: 'AdminSolicitudes' }), 2000)
+    setTimeout(() => router.back(), 2000)
   } catch (err: unknown) {
     mostrarToast(
       (err as { message?: string })?.message ?? 'Error al procesar la solicitud.',
@@ -403,6 +443,42 @@ function mostrarToast(mensaje: string, tipo: 'exito' | 'error') {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+function fallbackEstudiante(raw: Record<string, any>, codAlumno: string, base?: Record<string, any>) {
+  return {
+    nombre:   base?.nombre ?? raw.estudiante_nombre ?? raw.nombre_estudiante ?? raw.nombre ?? '—',
+    codigo:   base?.codigo ?? raw.estudiante_codigo ?? raw.codigo_estudiantil ?? codAlumno ?? '—',
+    programa: base?.programa ?? raw.programa ?? raw.nombre_programa ?? raw.carrera ?? '—',
+    semestre: base?.semestre ?? raw.semestre ?? 0,
+    promedio: base?.promedio ?? raw.promedio ?? '—',
+    email:    base?.email ?? raw.email ?? raw.email_institucional ?? '—',
+  }
+}
+
+function mapearEstado(estado: string): EstadoSolicitudAdmin {
+  const mapa: Record<string, EstadoSolicitudAdmin> = {
+    'PENDIENTE': 'Pendiente',
+    'EN_REVISION': 'En Revisión',
+    'EN_PROCESO': 'En proceso',
+    'APROBADA': 'Aprobada',
+    'RECHAZADA': 'Rechazada',
+    'pendiente': 'Pendiente',
+    'en_revision': 'En Revisión',
+    'en_proceso': 'En proceso',
+    'aprobada': 'Aprobada',
+    'rechazada': 'Rechazada',
+  }
+  return mapa[estado] ?? estado as EstadoSolicitudAdmin
+}
+
+function formatearFecha(fecha: string): string {
+  if (!fecha) return ''
+  try {
+    return new Date(fecha).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  } catch {
+    return fecha
+  }
+}
+
 function estadoBadge(estado?: EstadoSolicitudAdmin): string {
   const map: Record<EstadoSolicitudAdmin, string> = {
     'Aprobada':    'bg-green-100 text-green-700',

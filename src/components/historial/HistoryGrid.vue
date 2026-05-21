@@ -29,6 +29,7 @@ interface SolicitudHistorial {
   fechaEnvio: string
   facultad: string
   estado: EstadoSolicitud
+  justificacionRechazo?: string
 }
 
 defineProps<{ solicitudes: SolicitudHistorial[] }>()

@@ -10,7 +10,7 @@
       </main>
 
       <footer class="px-8 py-4 border-t border-slate-200 bg-white flex items-center justify-between text-[11px] text-slate-400">
-        <span>© 2026 AcademiaFlow – Gestión Académica Universitaria</span>
+        <span>© 2026 Novedades Autonoma – Gestión Académica Universitaria</span>
         <div class="flex gap-4">
           <a href="#" class="hover:text-slate-600 transition-colors">Soporte Técnico</a>
           <a href="#" class="hover:text-slate-600 transition-colors">Privacidad</a>

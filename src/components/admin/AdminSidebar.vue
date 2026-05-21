@@ -8,7 +8,7 @@
           <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
         </svg>
       </div>
-      <span class="font-bold text-[15px] text-slate-800 tracking-tight">AcademiaFlow</span>
+      <span class="font-bold text-[15px] text-slate-800 tracking-tight">Novedades Autonoma</span>
     </div>
 
     <!-- Nav -->
@@ -90,6 +90,5 @@ defineEmits<{ logout: [] }>()
 
 const navItems: NavItem[] = [
   { label: 'Gestión de usuarios', routeName: 'AdminUsuarios',  iconKey: 'history'  },
-  { label: 'Auditoría',           routeName: 'AdminDashboard', iconKey: 'home' },
 ]
 </script>

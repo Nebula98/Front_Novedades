@@ -46,7 +46,7 @@
               <p class="text-xs font-medium text-slate-800">{{ solicitud.tipo }}</p>
             </td>
             <td class="px-6 py-3.5">
-              <p class="text-xs text-slate-400">{{ solicitud.fecha }}</p>
+              <p class="text-xs text-slate-400">{{ solicitud.fechaEnvio }}</p>
             </td>
             <td class="px-6 py-3.5">
               <span :class="['inline-block px-2 py-0.5 text-xs font-medium rounded-full', estadoBadge[solicitud.estado]]">
@@ -54,12 +54,7 @@
               </span>
             </td>
             <td class="px-6 py-3.5 text-right">
-              <p
-                class="text-xs font-medium text-slate-500 hover:text-blue-600 cursor-pointer transition-colors"
-                @click="$emit('ver-detalle', solicitud.id)"
-              >
-                Ver detalles
-              </p>
+              <span class="text-xs font-medium text-slate-500"> </span>
             </td>
           </tr>
         </tbody>
@@ -75,7 +70,7 @@ import type { EstadoSolicitud } from '../../types'
 interface SolicitudTabla {
   id: string
   tipo: string
-  fecha: string
+  fechaEnvio: string
   estado: EstadoSolicitud
 }
 

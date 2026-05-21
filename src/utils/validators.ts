@@ -1,6 +1,6 @@
 export function validateStudentCode(code: string): string | null {
     if (!code.trim()) return 'El codigo estudiantil es requerido';
-    if (!/^\d{5,}$/.test(code.trim())) return 'El codigo debe tener al menos 5 digitos numericos.';
+    if (!/^[a-zA-Z0-9]{5,}$/.test(code.trim())) return 'El codigo debe tener al menos 5 caracteres (números o letras).';
     return null;
 }
 

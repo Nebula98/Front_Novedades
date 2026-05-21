@@ -25,8 +25,24 @@ const solicitudesApi = {
    * 📋 Listar mis solicitudes (para estudiante)
    */
   async misSolicitudes(params?: { pagina?: number; limite?: number; estado?: string }) {
-    const { data } = await http.get('/solicitudes/mis-solicitudes', { params })
-    return data as { data: SolicitudResponse[]; total: number }
+    try {
+      // Intentar con parámetros en formato correcto
+      const queryParams: Record<string, any> = {}
+      if (params?.pagina !== undefined) queryParams.page = params.pagina
+      if (params?.limite !== undefined) queryParams.limit = params.limite
+      if (params?.estado !== undefined) queryParams.estado = params.estado
+      
+      const { data } = await http.get('/solicitudes/mis-solicitudes', { params: Object.keys(queryParams).length > 0 ? queryParams : undefined })
+      return data as { data: SolicitudResponse[]; total: number }
+    } catch (error: any) {
+      // Si falla con parámetros, intentar sin parámetros
+      if (error?.response?.status === 400) {
+        console.warn('⚠️ Endpoint no aceptó parámetros, intentando sin ellos...')
+        const { data } = await http.get('/solicitudes/mis-solicitudes')
+        return data as { data: SolicitudResponse[]; total: number }
+      }
+      throw error
+    }
   },
 
   /**
@@ -52,8 +68,17 @@ const solicitudesApi = {
 
   /**
    * ✅ Crear nueva solicitud
+   * 
+   * @param payload - Puede incluir:
+   *   - tipo: string (Cambio de Curso, Cambio de Jornada, etc.)
+   *   - descripcion: string
+   *   - codigo_estudiantil: string
+   *   - email_estudiante: string
+   *   - nombre_estudiante: string
+   *   - Campos específicos según tipo (curso_actual, curso_nuevo, etc.)
+   *   - archivos?: File[] (opcional)
    */
-  async crear(payload: { motivo: string; detalles: Record<string, any> }) {
+  async crear(payload: Record<string, any>) {
     const { data } = await http.post('/solicitudes', payload)
     return data as SolicitudResponse
   },

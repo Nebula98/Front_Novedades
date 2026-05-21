@@ -75,11 +75,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import solicitudesService, { QUICK_ACTIONS } from '../services/solicitudesService'
 import type { Solicitud, EstadoSolicitud, TipoTramite } from '../types'
 import DashboardLayout from '../components/layout/Dashboardlayout.vue'
 
+const route = useRoute()
 const ESTADOS: EstadoSolicitud[] = ['En proceso', 'Aprobada', 'Rechazada', 'Pendiente', 'En Revisión']
 const PER_PAGE = 8
 
@@ -90,14 +92,32 @@ const search = ref('')
 const filterEstado = ref<EstadoSolicitud | ''>('')
 const page = ref(1)
 
-onMounted(async () => {
+// ─── Cargar solicitudes ───────────────────────────────────────────────
+async function cargarSolicitudes() {
   isLoading.value = true
+  error.value = null
   try {
+    console.log('📚 Cargando solicitudes del historial...')
     solicitudes.value = await solicitudesService.getMisSolicitudes()
+    console.log('✅ Solicitudes cargadas:', solicitudes.value.length)
   } catch (err: unknown) {
+    console.error('❌ Error cargando solicitudes:', err)
     error.value = (err as { message?: string })?.message ?? 'No se pudo cargar el historial.'
   } finally {
     isLoading.value = false
+  }
+}
+
+// Cargar al montar el componente
+onMounted(() => {
+  cargarSolicitudes()
+})
+
+// Recargar cuando la ruta cambia (ej: después de enviar solicitud y redirigir)
+watch(() => route.name, () => {
+  if (route.name === 'MiHistorial') {
+    console.log('🔄 Recargando solicitudes desde la ruta...')
+    cargarSolicitudes()
   }
 })
 

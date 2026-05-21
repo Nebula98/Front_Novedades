@@ -27,6 +27,15 @@
       <p class="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">{{ solicitud.descripcion }}</p>
     </div>
 
+    <!-- Justificación de rechazo (secretaría) -->
+    <div
+      v-if="solicitud.estado === 'Rechazada' && solicitud.justificacionRechazo"
+      class="rounded-lg border border-red-200 bg-red-50 px-3 py-2"
+    >
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-red-700">Motivo de rechazo</p>
+      <p class="mt-1 text-xs leading-relaxed text-red-800">{{ solicitud.justificacionRechazo }}</p>
+    </div>
+
     <!-- Fecha + Facultad -->
     <div class="flex items-center justify-between text-[11px] border-t border-slate-200 pt-3">
       <div class="flex flex-col gap-0.5">
@@ -49,18 +58,6 @@
       </div>
     </div>
 
-    <!-- Ver detalles -->
-    <button
-      class="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800
-             hover:underline transition-colors mt-auto"
-      @click="$emit('ver-detalle', solicitud.id)"
-    >
-      Ver detalles completos
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-      </svg>
-    </button>
-
   </div>
 </template>
 
@@ -75,6 +72,7 @@ interface SolicitudHistorial {
   fechaEnvio: string
   facultad: string
   estado: EstadoSolicitud
+  justificacionRechazo?: string
 }
 
 defineProps<{ solicitud: SolicitudHistorial }>()
@@ -84,6 +82,7 @@ const estadoBadge: Record<EstadoSolicitud, string> = {
   'Aprobada':   'bg-green-100 text-green-700',
   'Rechazada':  'bg-red-100 text-red-700',
   'En proceso': 'bg-blue-100 text-blue-700',
+  'En Revisión':'bg-indigo-100 text-indigo-700',
   'Pendiente':  'bg-yellow-100 text-yellow-700',
 }
 </script>

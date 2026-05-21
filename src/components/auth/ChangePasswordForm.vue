@@ -1,5 +1,22 @@
 <template>
     <form class="flex flex-col gap-5" @submit.prevent="handleSubmit" novalidate>
+        <!-- Contraseña actual -->
+        <BaseInput
+            v-model="form.currentPassword"
+            label="Contraseña Actual"
+            type="password"
+            placeholder="Ingresa tu contraseña temporal"
+            :error-message="errors.currentPassword"
+            autocomplete="current-password"
+            @blur="validateField('currentPassword')"
+        >
+            <template #icon>
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            </template>
+        </BaseInput>
+
         <!-- Nueva contra -->
          <div>
             <BaseInput
@@ -83,7 +100,7 @@
 import { reactive, computed } from 'vue';
 import BaseInput from '../ui/BaseInput.vue';
 import BaseButton from '../ui/BaseButton.vue';
-import { validateNewPassword, validatePasswordMatch } from '../../utils/validators';
+import { validateNewPassword, validatePasswordMatch, validatePassword } from '../../utils/validators';
 import type { ChangePasswordPayload } from '../../types';
 
 defineProps<{ loading: boolean }>();
@@ -92,8 +109,8 @@ const emit = defineEmits<{
     (e: 'submit', payload: ChangePasswordPayload): void;
 }>();
 
-const form = reactive({ newPassword: '', confirmPassword: '' });
-const errors = reactive({ newPassword: '', confirmPassword: '' });
+const form = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' });
+const errors = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
 // Indicador de fortaleza
 const requeriments = computed(() => [
@@ -117,7 +134,11 @@ function updateStrenght() {
     if (errors.newPassword) validateField('newPassword');
 }
 
-function validateField(field: 'newPassword' | 'confirmPassword') {
+function validateField(field: 'currentPassword' | 'newPassword' | 'confirmPassword') {
+    if (field === 'currentPassword') {
+        errors.currentPassword = validatePassword(form.currentPassword) ?? '';
+    }
+
     if (field === 'newPassword') {
         errors.newPassword = validateNewPassword(form.newPassword) ?? '';
     }
@@ -128,10 +149,15 @@ function validateField(field: 'newPassword' | 'confirmPassword') {
 }
 
 function handleSubmit() {
+    validateField('currentPassword');
     validateField('newPassword');
     validateField('confirmPassword');
-    if (errors.newPassword || errors.confirmPassword) return
-        emit('submit', { newPassword: form.newPassword, confirmPassword: form.confirmPassword });
+    if (errors.currentPassword || errors.newPassword || errors.confirmPassword) return
+        emit('submit', {
+            password_actual: form.currentPassword,
+            password_nueva: form.newPassword,
+            password_confirmacion: form.confirmPassword,
+        });
 }
 
 </script>

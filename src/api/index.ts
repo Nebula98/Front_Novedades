@@ -39,6 +39,7 @@ export { default as estudianteService } from '../services/estudianteService'
 export { default as solicitudesService } from '../services/solicitudesService'
 export { default as grupoService } from '../services/grupoService'
 export { default as adminService } from '../services/adminService'
+export { default as notificacionesService } from '../services/notificacionesService'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // RE-EXPORTAR TIPOS

@@ -64,6 +64,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../pages/History.vue'),
         meta: { requiresAuth: true, requiredRole: 'Estudiante' }
     },
+    {
+        path: '/perfil',
+        name: 'Perfil',
+        component: () => import('../pages/PerfilPage.vue'),
+        meta: { requiresAuth: true, requiredRole: 'Estudiante' }
+    },
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // RUTAS SECRETARIA (requieren rol Secretaria)
@@ -71,7 +77,7 @@ const routes: RouteRecordRaw[] = [
     { 
       path: '/secretaria',
       name: 'SecretariaDashboard',
-      component: () => import('../pages/SecretariaDashboardPage.vue'),
+      redirect: { name: 'SecretariaSolicitudes' },
       meta: { requiresAuth: true, requiredRole: 'Secretaria' }
     },
     { 
@@ -126,7 +132,8 @@ router.beforeEach((to) => {
   const studentData = localStorage.getItem('auth_student')
   const student = studentData ? JSON.parse(studentData) : null
   const userRole = student?.rol
-  const mustChange = localStorage.getItem('primer_login') === 'true'
+  const rawFirstLogin = localStorage.getItem('primer_login')
+  const mustChange = rawFirstLogin === 'true' || rawFirstLogin === '"true"'
 
   // 🔴 Si no está autenticado y requiere auth → /login
   if (to.meta.requiresAuth && !isAuthenticated) {

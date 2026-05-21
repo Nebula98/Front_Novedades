@@ -10,7 +10,7 @@
                             d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z" />
                     </svg>
                 </div>
-                <span class="text-lg font-bold text-blue-600 tracking-tight">AcademiaFlow</span>
+                <span class="text-lg font-bold text-blue-600 tracking-tight">Novedades Autonoma</span>
             </div>
         </header>
 
@@ -61,7 +61,7 @@
         <!-- Footer global -->
         <footer
             class="py-4 px-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-            <span>© 2025 AcademiaFlow · Gestión Académica Universitaria</span>
+            <span>© 2025 Novedades Autonoma · Gestión Académica Universitaria</span>
             <div class="flex gap-4">
                 <a href="#" class="hover:text-slate-600 transition-colors">Soporte Técnico</a>
                 <a href="#" class="hover:text-slate-600 transition-colors">Privacidad</a>
