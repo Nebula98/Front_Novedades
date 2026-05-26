@@ -71,25 +71,6 @@
     <!-- ── Tabla de usuarios ── -->
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
 
-      <!-- Filtros -->
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-        <!-- Buscador -->
-        <div class="relative flex-1">
-          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Buscar por nombre, email o ID..."
-            class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 placeholder-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
-            @input="onFilterChange"
-          />
-        </div>
-      </div>
-
       <!-- Tabla -->
       <table class="w-full">
         <thead>
@@ -188,7 +169,7 @@
                   </button>
                   <!-- Eliminar -->
                   <button
-                    @click="confirmarEliminar(u)"
+                    @click="abrirConfirmacionEliminar(u)"
                     title="Eliminar usuario"
                     class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
                   >
@@ -363,6 +344,60 @@
       </div>
     </Transition>
 
+    <!-- Modal: Confirmar desactivación -->
+    <Transition
+      enter-active-class="transition-all duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition-all duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="confirmacionEliminarAbierta"
+        class="fixed inset-0 bg-transparent z-[55] flex items-center justify-center p-4"
+        @click.self="cerrarConfirmacionEliminar"
+      >
+        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+          <div class="px-6 pt-5 pb-4">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <h3 class="text-[16px] font-bold text-slate-800">Confirmar desactivación</h3>
+            </div>
+
+            <p class="text-[13px] text-slate-600 leading-relaxed">
+              ¿Deseas desactivar a
+              <span class="font-semibold text-slate-800">{{ usuarioAEliminar?.nombre_completo || usuarioAEliminar?.nombre }}</span>?
+            </p>
+            <p class="text-[12px] text-slate-400 mt-2">
+              El usuario no podrá ingresar al sistema mientras esté inactivo.
+            </p>
+          </div>
+
+          <div class="px-6 pb-5 flex items-center justify-end gap-2.5">
+            <button
+              @click="cerrarConfirmacionEliminar"
+              class="px-4 py-2 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-all"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="confirmarEliminar"
+              class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[13px] font-semibold transition-all"
+            >
+              Desactivar usuario
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Toast -->
     <Transition
       enter-active-class="transition-all duration-300 ease-out"
@@ -403,7 +438,6 @@ const stats          = ref<UsuariosStats | null>(null)
 const usuarios       = ref<UsuarioAdmin[]>([])
 const total          = ref(0)
 const page           = ref(1)
-const search         = ref('')
 const loadingStats   = ref(false)
 const loadingTabla   = ref(false)
 
@@ -411,6 +445,8 @@ const loadingTabla   = ref(false)
 const modalAbierto    = ref(false)
 const usuarioEditando = ref<UsuarioAdmin | null>(null)
 const guardando       = ref(false)
+const confirmacionEliminarAbierta = ref(false)
+const usuarioAEliminar = ref<UsuarioAdmin | null>(null)
 
 const form = reactive({
   nombre:          '',
@@ -433,11 +469,19 @@ onMounted(async () => {
   try {
     const [statsData, tablaData] = await Promise.all([
       usuariosService.obtenerEstadisticas().catch(() => null),
-      usuariosService.getUsuarios({ pagina: 1, limite: PER_PAGE })
+      usuariosService.getUsuarios({ pagina: 1, limite: PER_PAGE, rol: 'Secretaria' })
     ])
-    stats.value       = statsData
+    const totalSecretarias = tablaData?.total ?? 0
+    stats.value = {
+      total_usuarios: statsData?.total_usuarios ?? totalSecretarias,
+      activos: statsData?.activos ?? 0,
+      inactivos: statsData?.inactivos ?? 0,
+      estudiantes: statsData?.estudiantes ?? 0,
+      secretarias: statsData?.secretarias ?? totalSecretarias,
+      administradores: statsData?.administradores ?? 0,
+    }
     usuarios.value    = tablaData?.usuarios || []
-    total.value       = tablaData?.total || 0
+    total.value       = totalSecretarias
   } catch { /* silencio */ } finally {
     loadingStats.value = false
     loadingTabla.value = false
@@ -460,8 +504,6 @@ async function fetchTabla() {
     loadingTabla.value = false
   }
 }
-
-function onFilterChange() { page.value = 1; fetchTabla() }
 
 // ─── Modal ───────────────────────────────────────────────────────────────────
 function abrirModal(usuario?: UsuarioAdmin) {
@@ -553,17 +595,28 @@ async function guardarUsuario() {
   }
 }
 
-async function confirmarEliminar(u: UsuarioAdmin) {
-  if (!confirm(`¿Desactivar a ${u.nombre_completo || u.nombre}?`)) return
+function abrirConfirmacionEliminar(u: UsuarioAdmin) {
+  usuarioAEliminar.value = u
+  confirmacionEliminarAbierta.value = true
+}
+
+function cerrarConfirmacionEliminar() {
+  confirmacionEliminarAbierta.value = false
+  usuarioAEliminar.value = null
+}
+
+async function confirmarEliminar() {
+  if (!usuarioAEliminar.value) return
   try {
-    await usuariosService.desactivar(Number(u.id))
-    const idx = usuarios.value.findIndex(x => x.id === u.id)
+    await usuariosService.desactivar(Number(usuarioAEliminar.value.id))
+    const idx = usuarios.value.findIndex(x => x.id === usuarioAEliminar.value?.id)
     if (idx !== -1) {
       const usuario = usuarios.value[idx]
       if (usuario) {
         usuario.estado = 'Inactivo'
       }
     }
+    cerrarConfirmacionEliminar()
     mostrarToast('Usuario desactivado.', 'exito')
   } catch (err: unknown) {
     mostrarToast((err as { message?: string })?.message ?? 'Error al desactivar.', 'error')
