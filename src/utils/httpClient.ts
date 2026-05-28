@@ -2,8 +2,40 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosError } from 'axios'
 import type { ApiError } from '../types'
 
+const DEFAULT_PROD_API_BASE_URL = 'https://proyecto-novedades-six.vercel.app/api'
+
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/+$/, '')
+}
+
+function resolveApiBaseUrl(): string {
+  const configuredBase = String(import.meta.env.VITE_API_BASE_URL || '').trim()
+  const prodFallback = String(import.meta.env.VITE_API_PROD_BASE_URL || DEFAULT_PROD_API_BASE_URL).trim()
+  const isAbsoluteHttp = (value: string): boolean => /^https?:\/\//i.test(value)
+
+  // En desarrollo permitimos /api para aprovechar el proxy de Vite.
+  if (import.meta.env.DEV) {
+    return normalizeBaseUrl(configuredBase || '/api')
+  }
+
+  // En build/despliegue, evitar rutas relativas (/api) que apuntan al host del frontend.
+  if (!configuredBase || configuredBase.startsWith('/')) {
+    return normalizeBaseUrl(prodFallback)
+  }
+
+  if (isAbsoluteHttp(configuredBase)) {
+    return normalizeBaseUrl(configuredBase)
+  }
+
+  return normalizeBaseUrl(prodFallback)
+}
+
+const apiBaseUrl = resolveApiBaseUrl()
+
+console.info('[httpClient] API base URL resuelta:', apiBaseUrl)
+
 const http: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: apiBaseUrl,
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 })

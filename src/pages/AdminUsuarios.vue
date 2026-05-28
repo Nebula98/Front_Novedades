@@ -254,7 +254,7 @@
     >
       <div
         v-if="modalAbierto"
-        class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-start justify-start p-6"
+        class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6"
         @click.self="cerrarModal"
       >
         <Transition
@@ -264,7 +264,7 @@
         >
           <div
             v-if="modalAbierto"
-            class="bg-white rounded-2xl shadow-2xl w-[360px] overflow-hidden"
+            class="bg-white rounded-2xl shadow-2xl w-full max-w-[360px] overflow-hidden"
           >
             <!-- Modal header -->
             <div class="flex items-start justify-between px-6 pt-6 pb-4">

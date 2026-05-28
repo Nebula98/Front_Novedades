@@ -79,7 +79,12 @@
 
       <AcademicInfo :student="authStore.student" />
 
-      <ApplicationDetails v-model="form" :jornadaActual="student?.jornada" />
+      <ApplicationDetails
+        v-model="form"
+        :jornadaActual="student?.jornada"
+        :materiasMatriculadasExterno="materiasMatriculadasVista"
+        :conflictoValidacion="conflictoValidacion"
+      />
 
       <AttachedDocuments v-model="form.archivos" />
 
@@ -131,7 +136,7 @@ import { useAuthStore } from '../store/authStore'
 import solicitudesService from '../services/solicitudesService'
 import estudianteService from '../services/estudianteService'
 import grupoService from '../services/grupoService'
-import type { TipoTramite, Grupo } from '../types'
+import type { TipoTramite, Grupo, MateriaMatriculada } from '../types'
 
 const router = useRouter()
 const route = useRoute()
@@ -166,6 +171,16 @@ const form = ref({
   archivos: [] as File[],
 })
 
+const materiasMatriculadasVista = ref<MateriaMatriculada[]>([])
+const conflictoValidacion = ref<{
+  tipo: 'cruce' | 'matriculada'
+  grupoNuevoId: number
+  curso?: string
+  dia?: string
+  horaInicio?: string
+  horaFin?: string
+} | null>(null)
+
 // Cargar el tipo de solicitud desde query params si existe
 onMounted(() => {
   const tipoParam = route.query.tipo as string
@@ -173,6 +188,14 @@ onMounted(() => {
     console.log('📋 Tipo de solicitud desde acciones rápidas:', tipoParam)
     form.value.tipoSolicitud = tipoParam as TipoTramite
   }
+
+  estudianteService.getMateriasMatriculadas()
+    .then((materias) => {
+      materiasMatriculadasVista.value = materias
+    })
+    .catch(() => {
+      materiasMatriculadasVista.value = []
+    })
 })
 
 const formularioValido = computed(() => {
@@ -259,6 +282,8 @@ async function handleSubmit() {
     return
   }
 
+  conflictoValidacion.value = null
+
   isSubmitting.value = true
   try {
     console.log('📝 Preparando solicitud...')
@@ -330,9 +355,15 @@ async function handleSubmit() {
         grupoService.obtenerTodosLosCursos(),
       ])
 
+      materiasMatriculadasVista.value = materiasMatriculadas
+
       const grupoNuevo = catalogoGrupos.find(g => g.id === Number(payload.grupo_nuevo_id))
 
       if (materiasMatriculadas.some(m => m.id === Number(payload.grupo_nuevo_id))) {
+        conflictoValidacion.value = {
+          tipo: 'matriculada',
+          grupoNuevoId: Number(payload.grupo_nuevo_id),
+        }
         showToast('error', '• Ya tienes esta materia/grupo matriculado. Selecciona un grupo diferente.')
         return
       }
@@ -340,6 +371,14 @@ async function handleSubmit() {
       if (grupoNuevo) {
         const grupoCruce = materiasMatriculadas.find((m) => hayCruceHorario(m as Grupo, grupoNuevo))
         if (grupoCruce) {
+          conflictoValidacion.value = {
+            tipo: 'cruce',
+            grupoNuevoId: Number(payload.grupo_nuevo_id),
+            curso: grupoCruce.nombre_curso,
+            dia: grupoCruce.dia_semana,
+            horaInicio: grupoCruce.hora_inicio.slice(0, 5),
+            horaFin: grupoCruce.hora_fin.slice(0, 5),
+          }
           showToast(
             'error',
             `• El grupo seleccionado cruza horario con ${grupoCruce.nombre_curso} (${grupoCruce.dia_semana} ${grupoCruce.hora_inicio.slice(0,5)}-${grupoCruce.hora_fin.slice(0,5)}).`

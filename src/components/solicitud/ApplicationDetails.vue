@@ -250,6 +250,71 @@
       </div>
     </Transition>
 
+    <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-700">Horario Semanal y Cruce de Materias</h3>
+          <p class="text-xs text-slate-500">
+            Bloque fijo de lunes a domingo para visualizar rápidamente traslapes de horario.
+          </p>
+        </div>
+        <span
+          class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+          :class="horarioNuevoBloque ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'"
+        >
+          {{ horarioNuevoBloque ? 'Comparando curso nuevo' : 'Selecciona un curso para comparar' }}
+        </span>
+      </div>
+
+      <div
+        v-if="resumenCruce"
+        class="text-xs rounded-lg px-3 py-2"
+        :class="hayCruceDetectado ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'"
+      >
+        {{ resumenCruce }}
+      </div>
+
+      <div class="overflow-x-auto pb-1">
+        <div class="grid grid-flow-col auto-cols-[minmax(170px,1fr)] gap-3 min-w-max">
+          <article
+            v-for="dia in diasHorario"
+            :key="dia.key"
+            class="rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-3 space-y-2 shadow-sm"
+          >
+            <header class="flex items-center justify-between">
+              <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wide">{{ dia.label }}</h4>
+              <span class="text-[11px] text-slate-400">{{ bloquesPorDia[dia.key].length }} bloque(s)</span>
+            </header>
+
+            <div v-if="bloquesPorDia[dia.key].length === 0" class="text-xs text-slate-400 py-3 text-center">
+              Sin clases
+            </div>
+
+            <div v-else class="space-y-2">
+              <div
+                v-for="bloque in bloquesPorDia[dia.key]"
+                :key="bloque.id"
+                class="rounded-lg border px-2.5 py-2 text-xs shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
+                :class="bloque.isCruce ? 'border-red-300 bg-red-50 text-red-700 ring-1 ring-red-200' : bloque.colorClass"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <span class="font-semibold text-[11px] leading-4 break-all pr-1">{{ bloque.nombre }}</span>
+                  <span
+                    class="px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0"
+                    :class="bloque.isCruce ? 'bg-red-100 text-red-700' : bloque.badgeClass"
+                  >
+                    {{ bloque.isCruce ? 'Cruce' : bloque.badgeLabel }}
+                  </span>
+                </div>
+                <p class="mt-1 font-semibold text-[11px] tracking-wide">{{ bloque.inicio }} - {{ bloque.fin }}</p>
+                <p class="opacity-80 text-[11px] break-words">Grupo {{ bloque.codigo }}</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+
     <!-- Justificación -->
     <div>
       <label class="block text-xs font-semibold text-slate-600 mb-1.5">
@@ -278,11 +343,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import type { TipoTramite, Grupo } from '../../types'
+import { ref, watch, onMounted, computed } from 'vue'
+import type { TipoTramite, Grupo, MateriaMatriculada } from '../../types'
 import grupoService from '../../services/grupoService'
 import estudianteService from '../../services/estudianteService'
 import CuposDetalle from './CuposDetalle.vue'
+
+type DiaClave = 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo'
+
+interface HorarioBloque {
+  id: string
+  nombre: string
+  codigo: string
+  diaKey: DiaClave
+  inicio: string
+  fin: string
+  inicioMin: number
+  finMin: number
+  isCruce: boolean
+  badgeLabel: 'Actual' | 'Nuevo'
+  colorClass: string
+  badgeClass: string
+}
 
 interface FormModel {
   tipoSolicitud: TipoTramite | ''
@@ -304,9 +386,20 @@ interface FormModel {
   justificacion: string
 }
 
+interface ConflictoValidacion {
+  tipo: 'cruce' | 'matriculada'
+  grupoNuevoId: number
+  curso?: string
+  dia?: string
+  horaInicio?: string
+  horaFin?: string
+}
+
 interface Props {
   modelValue: FormModel
   jornadaActual?: string
+  materiasMatriculadasExterno?: MateriaMatriculada[]
+  conflictoValidacion?: ConflictoValidacion | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -319,9 +412,6 @@ const tiposSolicitud: TipoTramite[] = [
   'Cambio de Jornada',
   'Curso Dirigido',
   'Adición de Curso',
-  'Cancelación de Semestre',
-  'Examen Supletorio',
-  'Cambio de Programa',
 ]
 
 // Programas académicos disponibles
@@ -338,15 +428,308 @@ const todosLosCursos = ref<Grupo[]>([])
 const cargando = ref(false)
 // IDs de grupos en los que el estudiante ya está matriculado
 const gruposMatriculadosIds = ref<number[]>([])
+const materiasMatriculadas = ref<MateriaMatriculada[]>([])
+const cargandoHorario = ref(false)
+
+const diasHorario: Array<{ key: DiaClave; label: string }> = [
+  { key: 'lunes', label: 'Lunes' },
+  { key: 'martes', label: 'Martes' },
+  { key: 'miercoles', label: 'Miércoles' },
+  { key: 'jueves', label: 'Jueves' },
+  { key: 'viernes', label: 'Viernes' },
+  { key: 'sabado', label: 'Sábado' },
+  { key: 'domingo', label: 'Domingo' },
+]
+
+const coloresActuales = [
+  { colorClass: 'border-sky-300 bg-sky-50 text-sky-700', badgeClass: 'bg-sky-100 text-sky-700' },
+  { colorClass: 'border-cyan-300 bg-cyan-50 text-cyan-700', badgeClass: 'bg-cyan-100 text-cyan-700' },
+  { colorClass: 'border-indigo-300 bg-indigo-50 text-indigo-700', badgeClass: 'bg-indigo-100 text-indigo-700' },
+  { colorClass: 'border-amber-300 bg-amber-50 text-amber-700', badgeClass: 'bg-amber-100 text-amber-700' },
+  { colorClass: 'border-lime-300 bg-lime-50 text-lime-700', badgeClass: 'bg-lime-100 text-lime-700' },
+  { colorClass: 'border-teal-300 bg-teal-50 text-teal-700', badgeClass: 'bg-teal-100 text-teal-700' },
+]
+
+async function cargarMateriasMatriculadas() {
+  cargandoHorario.value = true
+  try {
+    materiasMatriculadas.value = await estudianteService.getMateriasMatriculadas()
+    gruposMatriculadosIds.value = [
+      ...new Set(
+        materiasMatriculadas.value
+          .map((materia) => Number(materia.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    ]
+  } catch {
+    // Si falla el fetch de materias, al menos intentar recuperar IDs para validar matrícula previa.
+    try {
+      gruposMatriculadosIds.value = await estudianteService.getGruposMatriculadosIds()
+    } catch {
+      gruposMatriculadosIds.value = []
+    }
+  } finally {
+    cargandoHorario.value = false
+  }
+}
 
 // Cargar grupos matriculados al montar el componente
 onMounted(async () => {
-  try {
-    gruposMatriculadosIds.value = await estudianteService.getGruposMatriculadosIds()
-  } catch {
-    gruposMatriculadosIds.value = []
-  }
+  await cargarMateriasMatriculadas()
 })
+
+function normalizarDia(dia: string): DiaClave | null {
+  const limpio = (dia || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
+  if (limpio.startsWith('lun')) return 'lunes'
+  if (limpio.startsWith('mar')) return 'martes'
+  if (limpio.startsWith('mie')) return 'miercoles'
+  if (limpio.startsWith('jue')) return 'jueves'
+  if (limpio.startsWith('vie')) return 'viernes'
+  if (limpio.startsWith('sab')) return 'sabado'
+  if (limpio.startsWith('dom')) return 'domingo'
+
+  return null
+}
+
+function aMinutos(hora: string): number {
+  const [h, m] = (hora || '').slice(0, 5).split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+
+function formatearHora(hora: string): string {
+  const valor = (hora || '').slice(0, 5)
+  return valor.length === 5 ? valor : '00:00'
+}
+
+function hayCruce(a: HorarioBloque, b: HorarioBloque): boolean {
+  if (a.diaKey !== b.diaKey) return false
+  return a.inicioMin < b.finMin && b.inicioMin < a.finMin
+}
+
+function crearBloqueDesdeGrupo(
+  grupo: Pick<Grupo, 'id' | 'nombre_curso' | 'codigo_grupo' | 'dia_semana' | 'hora_inicio' | 'hora_fin'>,
+  color: { colorClass: string; badgeClass: string },
+  badgeLabel: 'Actual' | 'Nuevo',
+): HorarioBloque | null {
+  const diaKey = normalizarDia(grupo.dia_semana)
+  if (!diaKey) return null
+
+  return {
+    id: `${badgeLabel}-${grupo.id}`,
+    nombre: grupo.nombre_curso,
+    codigo: grupo.codigo_grupo,
+    diaKey,
+    inicio: formatearHora(grupo.hora_inicio),
+    fin: formatearHora(grupo.hora_fin),
+    inicioMin: aMinutos(grupo.hora_inicio),
+    finMin: aMinutos(grupo.hora_fin),
+    isCruce: false,
+    badgeLabel,
+    colorClass: color.colorClass,
+    badgeClass: color.badgeClass,
+  }
+}
+
+function buscarCursoPorNombre(lista: Grupo[], nombre: string): Grupo | null {
+  if (!nombre) return null
+  return lista.find((curso) => curso.nombre_curso === nombre) || null
+}
+
+const grupoNuevoSeleccionado = computed<Grupo | null>(() => {
+  if (!props.modelValue.tipoSolicitud) return null
+
+  if (props.modelValue.grupoNuevoId) {
+    const todasLasListas = [...cursosActual.value, ...cursosNuevo.value, ...todosLosCursos.value]
+    const porId = todasLasListas.find((curso) => curso.id === Number(props.modelValue.grupoNuevoId))
+    if (porId) return porId
+  }
+
+  if (props.modelValue.tipoSolicitud === 'Cambio de Curso') {
+    return buscarCursoPorNombre(cursosActual.value, props.modelValue.nuevoCurso)
+  }
+
+  if (props.modelValue.tipoSolicitud === 'Cambio de Jornada') {
+    return buscarCursoPorNombre(cursosNuevo.value, props.modelValue.nuevoCurso)
+  }
+
+  if (props.modelValue.tipoSolicitud === 'Curso Dirigido') {
+    return buscarCursoPorNombre(todosLosCursos.value, props.modelValue.materia)
+  }
+
+  if (props.modelValue.tipoSolicitud === 'Adición de Curso') {
+    return buscarCursoPorNombre(todosLosCursos.value, props.modelValue.cursoAdicionar)
+  }
+
+  if (props.modelValue.tipoSolicitud === 'Examen Supletorio') {
+    return buscarCursoPorNombre(todosLosCursos.value, props.modelValue.materiaExamen)
+  }
+
+  return null
+})
+
+const grupoActualSeleccionado = computed<Grupo | null>(() => {
+  if (props.modelValue.tipoSolicitud !== 'Cambio de Curso') return null
+  return buscarCursoPorNombre(cursosActual.value, props.modelValue.cursoActual)
+})
+
+const yaMatriculadoSeleccionado = computed(() => {
+  const grupo = grupoNuevoSeleccionado.value
+  if (!grupo) return false
+  return gruposMatriculadosIds.value.includes(Number(grupo.id))
+})
+
+const gruposBaseHorario = computed<
+  Array<Pick<Grupo, 'id' | 'nombre_curso' | 'codigo_grupo' | 'dia_semana' | 'hora_inicio' | 'hora_fin'>>
+>(() => {
+  if (materiasMatriculadas.value.length > 0) {
+    return materiasMatriculadas.value.map((materia) => ({
+      id: Number(materia.id),
+      nombre_curso: materia.nombre_curso,
+      codigo_grupo: materia.codigo_grupo,
+      dia_semana: materia.dia_semana,
+      hora_inicio: materia.hora_inicio,
+      hora_fin: materia.hora_fin,
+    }))
+  }
+
+  // Fallback visual: al menos comparar contra el curso actual seleccionado en Cambio de Curso.
+  if (grupoActualSeleccionado.value) {
+    return [
+      {
+        id: Number(grupoActualSeleccionado.value.id),
+        nombre_curso: grupoActualSeleccionado.value.nombre_curso,
+        codigo_grupo: grupoActualSeleccionado.value.codigo_grupo,
+        dia_semana: grupoActualSeleccionado.value.dia_semana,
+        hora_inicio: grupoActualSeleccionado.value.hora_inicio,
+        hora_fin: grupoActualSeleccionado.value.hora_fin,
+      },
+    ]
+  }
+
+  return []
+})
+
+const bloquesActuales = computed<HorarioBloque[]>(() => {
+  return gruposBaseHorario.value
+    .map((materia, index) => {
+      const color = coloresActuales[index % coloresActuales.length]
+      return crearBloqueDesdeGrupo(materia, color, 'Actual')
+    })
+    .filter((bloque): bloque is HorarioBloque => !!bloque)
+})
+
+const horarioNuevoBloque = computed<HorarioBloque | null>(() => {
+  const grupo = grupoNuevoSeleccionado.value
+  if (!grupo) return null
+
+  const bloque = crearBloqueDesdeGrupo(
+    grupo,
+    {
+      colorClass: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+      badgeClass: 'bg-emerald-100 text-emerald-700',
+    },
+    'Nuevo',
+  )
+
+  if (!bloque) return null
+  bloque.isCruce = yaMatriculadoSeleccionado.value || bloquesActuales.value.some((actual) => hayCruce(actual, bloque))
+  return bloque
+})
+
+const bloquesActualesConCruce = computed<HorarioBloque[]>(() => {
+  const nuevo = horarioNuevoBloque.value
+  if (!nuevo) return bloquesActuales.value
+
+  return bloquesActuales.value.map((actual) => ({
+    ...actual,
+    isCruce: hayCruce(actual, nuevo),
+  }))
+})
+
+const horarioVisual = computed<HorarioBloque[]>(() => {
+  const bloques = [...bloquesActualesConCruce.value]
+  if (horarioNuevoBloque.value) bloques.push(horarioNuevoBloque.value)
+  return bloques
+})
+
+const bloquesPorDia = computed<Record<DiaClave, HorarioBloque[]>>(() => {
+  const agrupado: Record<DiaClave, HorarioBloque[]> = {
+    lunes: [],
+    martes: [],
+    miercoles: [],
+    jueves: [],
+    viernes: [],
+    sabado: [],
+    domingo: [],
+  }
+
+  for (const bloque of horarioVisual.value) {
+    agrupado[bloque.diaKey].push(bloque)
+  }
+
+  for (const dia of diasHorario) {
+    agrupado[dia.key].sort((a, b) => a.inicioMin - b.inicioMin)
+  }
+
+  return agrupado
+})
+
+const hayCruceDetectado = computed(() => {
+  return yaMatriculadoSeleccionado.value || bloquesActualesConCruce.value.some((bloque) => bloque.isCruce) || !!horarioNuevoBloque.value?.isCruce
+})
+
+const resumenCruce = computed(() => {
+  if (props.conflictoValidacion?.tipo === 'matriculada') {
+    return 'Esta materia/grupo ya aparece como matriculada. Selecciona otra opción para continuar.'
+  }
+
+  if (props.conflictoValidacion?.tipo === 'cruce') {
+    if (props.conflictoValidacion.curso && props.conflictoValidacion.dia && props.conflictoValidacion.horaInicio && props.conflictoValidacion.horaFin) {
+      return `Cruce detectado con: ${props.conflictoValidacion.curso} (${props.conflictoValidacion.dia} ${props.conflictoValidacion.horaInicio}-${props.conflictoValidacion.horaFin}). Revisa otro grupo para evitar traslapes.`
+    }
+    return 'Cruce detectado por validación del sistema. Revisa otro grupo para evitar traslapes.'
+  }
+
+  if (!horarioNuevoBloque.value) {
+    if (cargandoHorario.value) {
+      return 'Cargando tu horario actual para comparar cruces...'
+    }
+    return 'Selecciona una materia nueva para comparar automáticamente contra tu horario actual.'
+  }
+
+  if (yaMatriculadoSeleccionado.value) {
+    return 'Esta materia/grupo ya aparece como matriculada. Selecciona otra opción para continuar.'
+  }
+
+  const cruces = bloquesActualesConCruce.value.filter((bloque) => bloque.isCruce)
+  if (cruces.length === 0) {
+    return 'Sin cruces detectados: este curso no se superpone con tus materias actuales.'
+  }
+
+  const nombres = cruces.map((bloque) => bloque.nombre).join(', ')
+  return `Cruce detectado con: ${nombres}. Revisa otro grupo para evitar traslapes.`
+})
+
+watch(
+  () => props.materiasMatriculadasExterno,
+  (lista) => {
+    if (!lista || lista.length === 0) return
+    materiasMatriculadas.value = [...lista]
+    gruposMatriculadosIds.value = [
+      ...new Set(
+        lista
+          .map((materia) => Number(materia.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    ]
+  },
+  { immediate: true, deep: true },
+)
 
 function estaMatriculado(grupoId: number): boolean {
   return gruposMatriculadosIds.value.includes(grupoId)
@@ -433,11 +816,16 @@ watch(
   () => props.modelValue.tipoSolicitud,
   async (tipo) => {
     const tiposConCursos = ['Curso Dirigido', 'Adición de Curso', 'Examen Supletorio']
+    const tiposConHorario = [...tiposConCursos, 'Cambio de Curso', 'Cambio de Jornada']
     if (tiposConCursos.includes(tipo) && todosLosCursos.value.length === 0) {
       todosLosCursos.value = await cargarTodosLosCursos()
     }
     if (tipo === 'Cambio de Curso' && props.jornadaActual) {
       cursosActual.value = await cargarCursos(props.jornadaActual)
+    }
+
+    if (tiposConHorario.includes(tipo)) {
+      await cargarMateriasMatriculadas()
     }
   }
 )
@@ -460,6 +848,16 @@ watch(
       cursosNuevo.value = await cargarCursos(nuevaJornada)
     }
   }
+)
+
+watch(
+  () => props.modelValue.grupoNuevoId,
+  async (grupoNuevoId) => {
+    if (!grupoNuevoId) return
+    if (materiasMatriculadas.value.length === 0) {
+      await cargarMateriasMatriculadas()
+    }
+  },
 )
 </script>
 

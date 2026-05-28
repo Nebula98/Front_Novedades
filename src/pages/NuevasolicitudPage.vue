@@ -244,7 +244,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const isLoading = ref(false); const isDragging = ref(false)
 const solicitudCreada = ref<SolicitudCreada | null>(null)
 
-const TIPOS: TipoTramite[] = ['Cambio de Curso','Cambio de Jornada','Curso Dirigido','Adición de Curso','Cancelación de Semestre','Examen Supletorio','Cambio de Programa']
+const TIPOS: TipoTramite[] = ['Cambio de Curso','Cambio de Jornada','Curso Dirigido','Adición de Curso']
 const jornadasDisponibles = ['mañana', 'tarde', 'noche']
 
 const form = ref({ tipo: '' as TipoTramite | '', descripcion: '', codigoCursoActual: '', codigoCursoNuevo: '', cursoActual: '', cursoNuevo: '', jornadaActual: '', jornadaNueva: '', archivos: [] as File[] })
