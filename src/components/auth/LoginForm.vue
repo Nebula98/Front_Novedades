@@ -1,27 +1,23 @@
 <template>
     <form class="flex flex-col gap-5" @submit.prevent="handleSubmit" novalidate>
-        <!-- Codigo estudiantil -->
-         <BaseInput
-            v-model="form.codigoEstudiantil"
-            label="Código Estudiantil"
-            type="text"
-            placeholder="Ej: 202310001"
-            :error-message="errors.codigoEstudiantil"
-            hint="Utiliza tu código de 5 dígitos asignado por registro."
-            inputmode="numeric"
+        <BaseInput
+            v-model="form.correo"
+            label="Correo institucional"
+            type="email"
+            placeholder="usuario@uniautonoma.edu.co"
+            :error-message="errors.correo"
+            hint="Usa tu correo institucional de la universidad."
             autocomplete="username"
-            @blur="validateField('codigoEstudiantil')"
+            @blur="validateField('correo')"
          >
-            <template>
-                <!-- Icono de persona -->
+            <template #icon>
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
             </template>
         </BaseInput>
 
-        <!-- Contraseña -->
-         <BaseInput
+        <BaseInput
             v-model="form.password"
             label="Contraseña"
             type="password"
@@ -56,7 +52,7 @@
 import { reactive } from 'vue';
 import BaseInput from '../ui/BaseInput.vue';
 import BaseButton from '../ui/BaseButton.vue';
-import { validateStudentCode, validatePassword } from '../../utils/validators';
+import { validateEmail, validatePassword } from '../../utils/validators';
 import type { LoginPayload } from '../../types';
 
 const props = defineProps<{ loading: boolean }>();
@@ -65,21 +61,19 @@ const emit = defineEmits<{
     (e: 'submit', payload: LoginPayload): void;
 }>();
 
-// Estado del formulario
 const form = reactive<LoginPayload>({
-    codigoEstudiantil: '',
+    correo: '',
     password: ''
 });
 
 const errors = reactive ({
-    codigoEstudiantil: '',
+    correo: '',
     password: ''
 });
 
-// Validacion por campo
 function validateField(field: keyof typeof errors) {
-    if (field === 'codigoEstudiantil') {
-        errors.codigoEstudiantil = validateStudentCode(form.codigoEstudiantil) ?? '';
+    if (field === 'correo') {
+        errors.correo = validateEmail(form.correo) ?? '';
     }
     if (field === 'password') {
         errors.password = validatePassword(form.password) ?? '';
@@ -87,15 +81,13 @@ function validateField(field: keyof typeof errors) {
 }
 
 function validateAll(): boolean {
-    validateField('codigoEstudiantil');
+    validateField('correo');
     validateField('password');
-    return !errors.codigoEstudiantil && !errors.password;
+    return !errors.correo && !errors.password;
 }
 
-// Submit
 function handleSubmit() {
-    if (!validateAll()) return; {
-        emit('submit', { ...form });
-    }
+    if (!validateAll()) return;
+    emit('submit', { ...form });
 }
 </script>

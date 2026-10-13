@@ -3,14 +3,10 @@
         <!-- Header con logo -->
         <header class="w-full py-4 px-6 bg-white border-b border-slate-200 flex items-center justify-center">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24"
-                        fill="currentColor">
-                        <path
-                            d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z" />
-                    </svg>
+                <div class="w-10 h-8 flex items-center justify-center">
+                    <img src="/logo-uniautonoma.png" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
                 </div>
-                <span class="text-lg font-bold text-blue-600 tracking-tight">Novedades Autonoma</span>
+                <span class="logo text-lg font-bold text-blue-600 tracking-tight">Novedades Autonoma</span>
             </div>
         </header>
 
@@ -24,12 +20,12 @@
                         <div class="flex justify-center mb-4">
                             <slot name="icon">
                                 <!-- Icono por defecto -->
-                                <div class="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                        <path
-                                            d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"
-                                        />
-                                    </svg>
+                                <div class="w-28 h-20 flex items-center justify-center">
+                                    <img
+                                        src="/logo-uniautonoma.png"
+                                        alt="Uniatónoma del Cauca"
+                                        class="w-full h-full object-contain"
+                                    />
                                 </div>
                             </slot>
                         </div>

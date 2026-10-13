@@ -101,7 +101,7 @@
           </button>
           <button
             class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white
-                   bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors
+                   bg-[var(--color-orange)] rounded-lg hover:bg-[var(--color-orange-dark)] active:bg-[var(--color-orange-dark)] transition-colors
                    disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!formularioValido || isSubmitting"
             @click="handleSubmit"

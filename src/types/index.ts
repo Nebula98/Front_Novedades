@@ -17,7 +17,7 @@ export type RolUsuario = 'Administrador' | 'Secretaria' | 'Estudiante' | 'Docent
 export type RolUsuarioBackend = 'estudiante' | 'secretaria' | 'admin'
 
 export interface LoginPayload {
-    codigoEstudiantil: string
+  correo: string
   password: string
 }
 

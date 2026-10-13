@@ -3,8 +3,18 @@ import type { ApiResponse, LoginPayload, LoginResponse, ChangePasswordPayload, C
 
 const authService = {
 async login(payload: LoginPayload): Promise<LoginResponse> {
-const { data } = await http.post<ApiResponse<LoginResponse>>('/auth/login', payload)
+const { data } = await http.post<ApiResponse<LoginResponse>>('/auth/login', {
+  correo: payload.correo.trim().toLowerCase(),
+  password: payload.password,
+})
 return data.datos
+},
+
+async loginWithGoogle(idToken: string): Promise<LoginResponse> {
+  const { data } = await http.post<ApiResponse<LoginResponse>>('/auth/google', {
+    id_token: idToken,
+  })
+  return data.datos
 },
 
 async changePassword(payload: ChangePasswordPayload): Promise<ChangePasswordResponse> {

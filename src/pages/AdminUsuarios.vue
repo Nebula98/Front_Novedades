@@ -10,7 +10,7 @@
       <div class="flex items-center gap-3">
         <button
           @click="abrirModal()"
-          class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-md shadow-blue-200 transition-all hover:-translate-y-px active:translate-y-0"
+          class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-orange)] hover:bg-[var(--color-orange-dark)] text-white text-sm font-bold shadow-md shadow-orange-200 transition-all hover:-translate-y-px active:translate-y-0"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round" stroke-linejoin="round">
@@ -332,7 +332,7 @@
                 <button
                   @click="guardarUsuario"
                   :disabled="guardando"
-                  class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-[13px] font-bold transition-all flex items-center justify-center gap-2"
+                  class="flex-1 py-2.5 rounded-xl bg-[var(--color-orange)] hover:bg-[var(--color-orange-dark)] disabled:opacity-60 text-white text-[13px] font-bold transition-all flex items-center justify-center gap-2"
                 >
                   <svg v-if="guardando" class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
                   {{ guardando ? 'Guardando...' : 'Guardar Usuario' }}

@@ -9,12 +9,10 @@
         <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Secretaría</span>
 
         <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-          <div class="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center shadow-sm">
-            <svg viewBox="0 0 24 24" fill="white" width="13" height="13">
-              <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
-            </svg>
+          <div class="w-10 h-8 flex items-center justify-center">
+            <img src="/logo-uniautonoma.svg" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
           </div>
-          <span class="font-bold text-[15px] text-slate-800 tracking-tight">Novedades Autonoma</span>
+          <span class="logo font-bold text-[15px] text-slate-800 tracking-tight">Novedades Autonoma</span>
         </div>
 
         <div ref="notificationsRoot" class="relative flex items-center gap-3">

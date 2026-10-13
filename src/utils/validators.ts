@@ -4,9 +4,15 @@ export function validateStudentCode(code: string): string | null {
     return null;
 }
 
+export function validateEmail(email: string): string | null {
+  if (!email.trim()) return 'El correo es requerido.'
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Ingresa un correo válido.'
+  return null
+}
+
 export function validatePassword(password: string): string | null {
     if (!password) return 'La contraseña es requerida.';
-    if (password.length < 6) return 'La contraseña debe tener al menos 6 caracteres.';
+    if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
     return null;
 }
 

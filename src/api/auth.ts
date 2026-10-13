@@ -56,33 +56,25 @@ function normalizeRole(rol: string): RolUsuario {
 
 const authApi = {
   /**
-   * 🔐 LOGIN - Inicia sesión y guarda token automáticamente
-   * 
-   * @param payload - { codigo_estudiantil, password }
+   * 🔐 LOGIN - Inicia sesión con correo institucional + contraseña
+   *
+   * @param payload - { correo, password }
    * @returns Token y datos del usuario
-   * 
-   * ⚡ Uso:
-   * const result = await authApi.login({ codigo_estudiantil: '20240', password: 'abc123' })
-   * localStorage.getItem('auth_token')  // ✅ Ya está guardado
-   * localStorage.getItem('auth_student') // ✅ Datos del usuario guardados
    */
   async login(payload: LoginPayload): Promise<LoginResponse> {
-    // Transformar camelCase a snake_case para el backend
     const sendPayload = {
-      codigo_estudiantil: payload.codigoEstudiantil,
-      password: payload.password
+      correo: payload.correo.trim().toLowerCase(),
+      password: payload.password,
     }
 
     console.log('📤 Enviando login con:', sendPayload)
     const { data } = await http.post<BackendLoginResponse>('/auth/login', sendPayload)
-    
-    console.log('📥 Respuesta recibida:', data)
-    console.log('📥 datos.token:', data.datos?.token)
-    console.log('📥 datos.id_usuario:', data.datos?.id_usuario)
-    console.log('📥 datos.nombre_completo:', data.datos?.nombre_completo)
+
+    if (!data?.datos) {
+      throw new Error(data?.mensaje || 'Respuesta inválida del backend')
+    }
 
     const normalizedRol = normalizeRole(data.datos.rol)
-    console.log('🎭 Rol normalizado:', normalizedRol)
 
     const result: LoginResponse = {
       token: data.datos.token,
@@ -106,11 +98,50 @@ const authApi = {
         promedio: data.datos.promedio,
         avatarUrl: data.datos.avatarUrl,
       },
-      requiresPasswordChange: data.datos.primer_login,
+      requiresPasswordChange: !!data.datos.primer_login,
     }
 
-    console.log('✅ Resultado login:', result)
     return result
+  },
+
+  /**
+   * 🔐 LOGIN CON GOOGLE - recibe el id_token de Google Identity Services
+   */
+  async loginWithGoogle(idToken: string): Promise<LoginResponse> {
+    const { data } = await http.post<BackendLoginResponse>('/auth/google', {
+      id_token: idToken,
+    })
+
+    if (!data?.datos) {
+      throw new Error(data?.mensaje || 'No se pudo iniciar sesión con Google')
+    }
+
+    const normalizedRol = normalizeRole(data.datos.rol)
+
+    return {
+      token: data.datos.token,
+      student: {
+        id: String(data.datos.id_usuario),
+        nombre: data.datos.nombre_completo,
+        nombre_completo: data.datos.nombre_completo,
+        codigo: data.datos.codigo_estudiantil || '',
+        cod_alumno: data.datos.codigo_estudiantil,
+        rol: normalizedRol,
+        carrera: data.datos.carrera || '',
+        programa: data.datos.programa,
+        email: data.datos.email,
+        email_institucional: data.datos.email_institucional,
+        semestre: data.datos.semestre,
+        jornada: data.datos.jornada,
+        creditos_inscritos: data.datos.creditos_inscritos,
+        creditos_max_permitidos: data.datos.creditos_max_permitidos,
+        estado_academico: data.datos.estado_academico,
+        matricula_activa: data.datos.matricula_activa,
+        promedio: data.datos.promedio,
+        avatarUrl: data.datos.avatarUrl,
+      },
+      requiresPasswordChange: !!data.datos.primer_login,
+    }
   },
 
   /**

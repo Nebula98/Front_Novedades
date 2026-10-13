@@ -37,24 +37,20 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('🔐 authStore.login iniciando...')
       const response = await authApi.login(payload)
       console.log('✅ authApi.login respondió:', response)
-      
+
       token.value = response.token
       student.value = response.student
-      
+
       console.log('💾 Guardando en localStorage...')
       Storage.setToken(response.token)
       Storage.setStudent(response.student)
       Storage.setFirstLogin(response.requiresPasswordChange)
-      console.log('✅ Token guardado:', response.token.substring(0, 20) + '...')
-      console.log('✅ Student guardado:', response.student)
-      
-      // 📚 Cargar perfil académico completo con semestre, programa, jornada, créditos, etc.
+
       try {
         console.log('📚 Cargando perfil académico completo...')
         const perfilAcademico = await estudianteService.getPerfilAcademico()
         console.log('✅ Perfil académico cargado:', perfilAcademico)
-        
-        // Actualizar el student con la información académica completa
+
         if (student.value) {
           student.value.semestre = perfilAcademico.semestre
           student.value.programa = perfilAcademico.programa || perfilAcademico.nombre_programa
@@ -65,17 +61,13 @@ export const useAuthStore = defineStore('auth', () => {
           student.value.matricula_activa = perfilAcademico.matricula_activa
           student.value.nombre_completo = perfilAcademico.nombre_completo
           student.value.email_institucional = perfilAcademico.email_institucional
-          
-          // Guardar los datos actualizados
+
           Storage.setStudent(student.value)
-          console.log('✅ Perfil académico sincronizado con student')
         }
       } catch (perfilErr) {
         console.warn('⚠️ No se pudo cargar el perfil académico completo:', perfilErr)
-        // No fallar el login si no se puede cargar el perfil, solo advertir
       }
-      
-      console.log('🔄 requiresPasswordChange:', response.requiresPasswordChange)
+
       return { requiresPasswordChange: response.requiresPasswordChange }
     } catch (err: unknown) {
       console.error('❌ Error en authStore.login:', err)
@@ -87,6 +79,28 @@ export const useAuthStore = defineStore('auth', () => {
         error.value = apiErr?.message || 'Error al iniciar sesión.'
       }
 
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function loginWithGoogle(idToken: string): Promise<{ requiresPasswordChange: boolean }> {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await authApi.loginWithGoogle(idToken)
+
+      token.value = response.token
+      student.value = response.student
+      Storage.setToken(response.token)
+      Storage.setStudent(response.student)
+      Storage.setFirstLogin(response.requiresPasswordChange)
+
+      return { requiresPasswordChange: response.requiresPasswordChange }
+    } catch (err: unknown) {
+      const apiErr = err as { message?: string; statusCode?: number }
+      error.value = apiErr?.message || 'No se pudo iniciar sesión con Google.'
       throw err
     } finally {
       isLoading.value = false
@@ -144,5 +158,5 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
-  return { token, student, mockStudent, isLoading, error, isAuthenticated, studentFirstName, login, changePassword, logout, clearError }
+  return { token, student, mockStudent, isLoading, error, isAuthenticated, studentFirstName, login, loginWithGoogle, changePassword, logout, clearError }
 })

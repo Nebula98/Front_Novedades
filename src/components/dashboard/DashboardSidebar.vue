@@ -2,8 +2,8 @@
   <aside class="w-40 min-h-screen bg-white border-r border-slate-200 flex flex-col fixed top-0 left-0 z-20">
     <!-- Brand -->
     <div class="px-4 py-4 border-b border-slate-100 flex items-center gap-2">
-      <div class="w-6 h-6 grid grid-cols-3 gap-0.5 opacity-40">
-        <span v-for="i in 9" :key="i" class="bg-slate-500 rounded-sm" />
+      <div class="w-10 h-8 shrink-0 flex items-center justify-center">
+        <img src="/logo-uniautonoma.svg" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
       </div>
       <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Estudiante</span>
     </div>
