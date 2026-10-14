@@ -3,7 +3,7 @@
     <!-- Brand -->
     <div class="px-4 py-4 border-b border-slate-100 flex items-center gap-2">
       <div class="w-10 h-8 shrink-0 flex items-center justify-center">
-        <img src="/logo-uniautonoma.svg" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
+        <img src="/logo-uniautonoma.png" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
       </div>
       <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Estudiante</span>
     </div>

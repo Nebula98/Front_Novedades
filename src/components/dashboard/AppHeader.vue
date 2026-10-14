@@ -9,7 +9,7 @@
     <!-- Logo centrado -->
     <div class="flex items-center gap-2 basis-1/3 justify-center">
       <div class="w-10 h-8 flex items-center justify-center shrink-0">
-        <img src="/logo-uniautonoma.svg" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
+        <img src="/logo-uniautonoma.png" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
       </div>
       <span class="logo text-lg font-bold text-blue-600 tracking-tight">Novedades Autonoma</span>
     </div>

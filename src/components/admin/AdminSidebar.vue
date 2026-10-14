@@ -4,7 +4,7 @@
     <!-- Logo -->
     <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2.5">
       <div class="w-10 h-8 shrink-0 flex items-center justify-center">
-        <img src="/logo-uniautonoma.svg" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
+        <img src="/logo-uniautonoma.png" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
       </div>
       <span class="logo font-bold text-[15px] text-slate-800 tracking-tight">Novedades Autonoma</span>
     </div>
